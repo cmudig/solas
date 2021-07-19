@@ -318,6 +318,22 @@ class LuxSeries(pd.Series):
 
         return ret_value
 
+    def describe(self, *args, **kwargs):
+        ret_value = super(LuxSeries, self).describe(*args, **kwargs)
+
+        ret_value._parent_df = self._parent_df
+        ret_value._history = self._parent_df._history.copy()
+        ret_value.pre_aggregated = True
+
+        # add to history
+        self._history.append_event("describe", [self.name])
+        if ret_value.history.check_event(-1, op_name="col_ref", cols=[self.name]):
+            ret_value.history.edit_event(-1, "describe", [self.name], rank_type="child")
+        else: 
+            ret_value.history.append_event("describe", [self.name], rank_type="child")
+        self.add_to_parent_history("describe", [self.name])
+        return ret_value
+
     def unique(self, *args, **kwargs):
         """
         Overridden method for pd.Series.unique with cached results.
@@ -336,7 +352,6 @@ class LuxSeries(pd.Series):
             ret_value = np.array(self.unique_values[self.name])
         else:
             ret_value = super(LuxSeries, self).unique(*args, **kwargs)
-        
         self._history.append_event("unique", [self.name])
         self.add_to_parent_history("unique", [self.name])
 
