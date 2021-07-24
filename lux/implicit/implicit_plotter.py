@@ -89,10 +89,12 @@ def process_value_counts(signal, ldf):
         array: []
             which columns were used
     """
+    set_trace()
     try:
-        rank_type = signal.kwargs["rank_type"]
+        rank_type = signal.kwargs.get("rank_type", None)
+        # in the unique case, there is no parent but we still want the corresponding visualization.
         c_name = signal.cols[0]
-        if rank_type == "parent" and not ldf.pre_aggregated:
+        if ((rank_type == "parent") or rank_type is None) and not ldf.pre_aggregated:
             # due to the most recent event is set to be non-parent, 
             # this part of the conditional statement actually is never used.
             if ldf.data_type[c_name] == "quantitative":
