@@ -21,6 +21,7 @@ from lux.history.history import History
 from lux.utils.message import Message
 from lux.implicit.utils import rename_from_history
 
+
 from pandas._typing import (
     FrameOrSeries,
     ArrayLike,
@@ -140,9 +141,10 @@ class LuxSeries(pd.Series):
 
         # Default column name 0 causes errors
         if self.name is None:
-            self.name = " "
+            self.name = "Unnamed"
 
         ldf = LuxDataFrame(self)
+
         ldf._parent_df = (
             self._parent_df
         )  # tbd if this is good or bad, dont think I ever need the series itself
@@ -168,6 +170,8 @@ class LuxSeries(pd.Series):
                     self._toggle_pandas_display = False
                 else:
                     self._toggle_pandas_display = True
+
+
 
                 # df_to_display.maintain_recs() # compute the recommendations (TODO: This can be rendered in another thread in the background to populate self._widget)
                 ldf.maintain_recs(is_series="Series")
@@ -219,7 +223,6 @@ class LuxSeries(pd.Series):
 
     @property
     def recommendation(self):
-        from lux.core.frame import LuxDataFrame
 
         if self._recommendation is not None and self._recommendation == {}:
             if self.name is None:
@@ -306,7 +309,7 @@ class LuxSeries(pd.Series):
         ret_value._history = self._parent_df._history.copy()
         ret_value.pre_aggregated = True
 
-        # add to history
+        # add to history 
         self._history.append_event("value_counts", [self.name]) # df.col
         if ret_value.history.check_event(-1, op_name="col_ref", cols=[self.name]):
             ret_value.history.edit_event(-1, "value_counts", [self.name], rank_type="child")
@@ -321,17 +324,19 @@ class LuxSeries(pd.Series):
     def describe(self, *args, **kwargs):
         ret_value = super(LuxSeries, self).describe(*args, **kwargs)
 
-        ret_value._parent_df = self._parent_df
-        ret_value._history = self._parent_df._history.copy()
+        from lux.core.frame import LuxDataFrame
+        ret_value._parent_df = LuxDataFrame({"Unnamed": self})
+        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
         ret_value.pre_aggregated = True
 
         # add to history
-        self._history.append_event("describe", [self.name])
-        if ret_value.history.check_event(-1, op_name="col_ref", cols=[self.name]):
-            ret_value.history.edit_event(-1, "describe", [self.name], rank_type="child")
+        name = "Unnamed" if self.name is None else self.name
+        self._history.append_event("describe", [name])
+        if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
+            ret_value.history.edit_event(-1, "describe", [name], rank_type="child")
         else: 
-            ret_value.history.append_event("describe", [self.name], rank_type="child")
-        self.add_to_parent_history("describe", [self.name])
+            ret_value.history.append_event("describe", [name], rank_type="child")
+        self.add_to_parent_history("describe", [name])
         return ret_value
 
     def unique(self, *args, **kwargs):
