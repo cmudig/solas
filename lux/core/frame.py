@@ -419,6 +419,8 @@ class LuxDataFrame(pd.DataFrame):
                 f"Please convert the {is_series} into a flat "
                 f"table via pandas.DataFrame.reset_index."
             )
+        elif is_series == "Series" and self.columns[0] == "Unnamed":
+            self._message.add(f"Lux sets by default the name of this unnamed {is_series} as \"Unnamed\" during visualization")
         else:
             id_fields_str = ""
             inverted_data_type = lux.config.executor.invert_data_type(self.data_type)
@@ -748,7 +750,6 @@ class LuxDataFrame(pd.DataFrame):
 
         # get single function vis
         from lux.action.implicit_tab import implicit_mre
-
         implicit_mre_rec, curr_hist_index = implicit_mre(self, self.selectedHistoryIndex)
         implicit_mre_JSON = LuxDataFrame.rec_to_JSON([implicit_mre_rec])
 
