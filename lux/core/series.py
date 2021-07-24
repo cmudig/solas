@@ -370,6 +370,26 @@ class LuxSeries(pd.Series):
         self.add_to_parent_history("isna", [name])
         return ret_value
 
+    def isnull(self, *args, **kwargs):
+        with self._history.pause():
+            ret_value = super(LuxSeries, self).isnull(*args, **kwargs)
+
+        from lux.core.frame import LuxDataFrame
+        name = "Unnamed" if self.name is None else self.name
+        ret_value._parent_df = self
+        # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
+        # this is different from the part in describe, simply to faciliate the visualization.
+        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+
+        # add to history
+        self._history.append_event("isna", [name])
+        if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
+            ret_value.history.edit_event(-1, "isna", [name], rank_type="child")
+        else: 
+            ret_value.history.append_event("isna", [name], rank_type="child")
+        self.add_to_parent_history("isna", [name])
+        return ret_value
+
     def unique(self, *args, **kwargs):
         """
         Overridden method for pd.Series.unique with cached results.
