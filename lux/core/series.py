@@ -366,8 +366,9 @@ class LuxSeries(pd.Series):
             ret_value = np.array(self.unique_values[self.name])
         else:
             ret_value = super(LuxSeries, self).unique(*args, **kwargs)
-        self._history.append_event("unique", [self.name])
-        self.add_to_parent_history("unique", [self.name])
+        name = "Unnamed" if self.name is None else self.name
+        self._history.append_event("unique", [name])
+        self.add_to_parent_history("unique", [name])
 
         return ret_value
 
