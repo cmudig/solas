@@ -93,6 +93,8 @@ def process_value_counts(signal, ldf):
         rank_type = signal.kwargs["rank_type"]
         c_name = signal.cols[0]
         if rank_type == "parent" and not ldf.pre_aggregated:
+            # due to the most recent event is set to be non-parent, 
+            # this part of the conditional statement actually is never used.
             if ldf.data_type[c_name] == "quantitative":
                 clse = lux.Clause(attribute=c_name, mark_type="histogram")
             else:
