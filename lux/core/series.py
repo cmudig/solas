@@ -311,14 +311,15 @@ class LuxSeries(pd.Series):
         ret_value.pre_aggregated = True
 
         # add to history 
-        self._history.append_event("value_counts", [self.name]) # df.col
-        if ret_value.history.check_event(-1, op_name="col_ref", cols=[self.name]):
-            ret_value.history.edit_event(-1, "value_counts", [self.name], rank_type="child")
+        name = "Unnamed" if self.name is None else self.name
+        self._history.append_event("value_counts", [name]) # df.col
+        if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
+            ret_value.history.edit_event(-1, "value_counts", [name], rank_type="child")
         else: 
-            ret_value.history.append_event("value_counts", [self.name], rank_type="child")
+            ret_value.history.append_event("value_counts", [name], rank_type="child")
         ## otherwise, there are two logs, one for col_ref, the othere for value_counts
         ## because it directly copies the history of the parent dataframe
-        self.add_to_parent_history("value_counts", [self.name]) # df
+        self.add_to_parent_history("value_counts", [name]) # df
 
         return ret_value
 
@@ -330,9 +331,11 @@ class LuxSeries(pd.Series):
             if self._parent_df is not None:
                 self._parent_df.history.unfreeze()
 
-        from lux.core.frame import LuxDataFrame
+        from lux.core.frame import LuxDataFram
         name = "Unnamed" if self.name is None else self.name
-        ret_value._parent_df = LuxDataFrame({name: self})
+        ret_value._parent_df = LuxDataFrame({name: self}) 
+        # this is different from the part in value_counts, simply to faciliate the visualization.
+        # sinc in the boxplot, the whole dataframe is needed.
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
         ret_value.pre_aggregated = True
 
