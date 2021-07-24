@@ -89,7 +89,6 @@ def process_value_counts(signal, ldf):
         array: []
             which columns were used
     """
-    set_trace()
     try:
         rank_type = signal.kwargs.get("rank_type", None)
         # in the unique case, there is no parent but we still want the corresponding visualization.
