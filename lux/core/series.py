@@ -306,7 +306,8 @@ class LuxSeries(pd.Series):
         ret_value = super(LuxSeries, self).value_counts(*args, **kwargs)
 
         ret_value._parent_df = self
-        ret_value._history = self._parent_df._history.copy()
+        ret_value._history = self._history.copy() # self._parent_df._history.copy()
+        # is there a need to copy from the history of the grandparent?
         ret_value.pre_aggregated = True
 
         # add to history 
@@ -322,15 +323,20 @@ class LuxSeries(pd.Series):
         return ret_value
 
     def describe(self, *args, **kwargs):
-        ret_value = super(LuxSeries, self).describe(*args, **kwargs)
+        with self.history.pause():
+            if self._parent_df is not None:
+                self._parent_df.history.freeze()
+            ret_value = super(LuxSeries, self).describe(*args, **kwargs)
+            if self._parent_df is not None:
+                self._parent_df.history.unfreeze()
 
         from lux.core.frame import LuxDataFrame
-        ret_value._parent_df = LuxDataFrame({"Unnamed": self})
+        name = "Unnamed" if self.name is None else self.name
+        ret_value._parent_df = LuxDataFrame({name: self})
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
         ret_value.pre_aggregated = True
 
         # add to history
-        name = "Unnamed" if self.name is None else self.name
         self._history.append_event("describe", [name])
         if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
             ret_value.history.edit_event(-1, "describe", [name], rank_type="child")
