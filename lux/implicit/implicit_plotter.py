@@ -151,19 +151,30 @@ def process_describe(signal, ldf):
         array: []
             Empty array of used cols so not excluded in other vis
     """
-    if (
-        ldf._parent_df is not None
-        and len(ldf) == 8
-        and all(ldf.index == ["count", "mean", "std", "min", "25%", "50%", "75%", "max"])
+    plot_df = None
+    if (ldf._parent_df is not None and (
+            (len(ldf) == 8 and all(ldf.index == ["count", "mean", "std", "min", "25%", "50%", "75%", "max"])) # the numeric case
+        or  (len(ldf) == 4 and all(ldf.index == ["count", "unique", "top", "freq"])) # the object case
+        or  (len(ldf) == 11 and all(ldf.index == ["count", "unique", "top", "freq", "mean", "std", "min", "25%", "50%", "75%", "max"])) # the mixed case
+        ) 
     ):
         plot_df = ldf._parent_df
     else:
         plot_df = ldf
-
+    
     collection = []
-
-    for c in signal.cols:
-        v = Vis([lux.Clause(c, mark_type="boxplot")], plot_df)
+    data_types = dict(ldf.dtypes)
+    for col in signal.cols:
+        if data_types[col] == object:
+            # then it is string; 
+            # note here we choose to comply with the describe convention instead of lux.
+            # by drawing quantitative but nominal variables as boxplot.
+            v = Vis([lux.Clause(col, mark_type="bar")], plot_df)
+        elif ldf._data_type[col] == "temporal":
+            v = Vis([lux.Clause(col, mark_type="line")], plot_df)
+        else:
+            # it is then numeric so it is safe to draw boxplot.
+            v = Vis([lux.Clause(col, mark_type="boxplot")], plot_df)
         collection.append(v)
 
     vl = VisList(collection)
