@@ -1147,15 +1147,17 @@ class LuxDataFrame(pd.DataFrame):
 
         return ret_value
 
-    def dropna(self, *args, **kwargs):
+    def dropna(self, axis=0, how='any', thresh=None, subset=None, inplace=False):
         with self.history.pause():
-            ret_value = super(LuxDataFrame, self).dropna(*args, **kwargs)
+            ret_value = super(LuxDataFrame, self).dropna(axis, how, thresh, subset, inplace)
 
-        subset = kwargs.get("subset", None)
-        # we leave out one possible case when the user pass subset through *args style
+        # subset = kwargs.get("subset", None)
+        # In this way, we may leave out one possible case when the user pass subset through *args style
         # for example, df.dropna("rows", "all", 2, ["Origin"]) listing all parameters in order
         # but given there are in total three parameters before the subset, 
         # it seems this is a quite unusual choice
+        # But by specifying all possible parameters originally hidden in the *args and *kwargs,
+        # we could know exactly wha subset is. 
         cols = subset if subset is not None else []
         self.history.append_event("dropna", cols, rank_type="parent", child_df=ret_value, filt_key=None)
         if ret_value is not None:  # i.e. inplace = True
