@@ -301,7 +301,7 @@ class LuxSeries(pd.Series):
     The fix is to catch this the first time a column is pulled into the cache and either clear the history or 
     something else
     """
-    def _log_events(self, op_name):
+    def _log_events(self, op_name, ret_value):
         # add to history 
         name = "Unnamed" if self.name is None else self.name
         self._history.append_event(op_name, [name]) # df.col
@@ -323,7 +323,7 @@ class LuxSeries(pd.Series):
         ret_value.pre_aggregated = True
 
         # add to history 
-        self._log_events("value_counts")
+        self._log_events("value_counts", ret_value)
         return ret_value
 
     def describe(self, *args, **kwargs):
@@ -343,7 +343,7 @@ class LuxSeries(pd.Series):
         ret_value.pre_aggregated = True
 
         # add to history
-        self._log_events("describe")
+        self._log_events("describe", ret_value)
         return ret_value
 
 
@@ -352,14 +352,13 @@ class LuxSeries(pd.Series):
             ret_value = super(LuxSeries, self).isna(*args, **kwargs)
 
         from lux.core.frame import LuxDataFrame
-        name = "Unnamed" if self.name is None else self.name
         ret_value._parent_df = self
         # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
         # this is different from the part in describe, simply to faciliate the visualization.
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
 
         # add to history
-        self._log_events("isna")
+        self._log_events("isna", ret_value)
         return ret_value
 
     def isnull(self, *args, **kwargs):
@@ -367,15 +366,45 @@ class LuxSeries(pd.Series):
             ret_value = super(LuxSeries, self).isnull(*args, **kwargs)
 
         from lux.core.frame import LuxDataFrame
-        name = "Unnamed" if self.name is None else self.name
         ret_value._parent_df = self
         # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
         # this is different from the part in describe, simply to faciliate the visualization.
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
 
         # add to history
-        self._log_events("isna")
+        self._log_events("isna", ret_value)
         return ret_value
+
+
+    def notnull(self, *args, **kwargs):
+        with self._history.pause():
+            ret_value = super(LuxSeries, self).notnull(*args, **kwargs)
+
+        from lux.core.frame import LuxDataFrame
+        ret_value._parent_df = self
+        # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
+        # this is different from the part in describe, simply to faciliate the visualization.
+        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+
+        # add to history
+        self._log_events("notnull", ret_value)
+        return ret_value
+
+    def notna(self, *args, **kwargs):
+        with self._history.pause():
+            ret_value = super(LuxSeries, self).notna(*args, **kwargs)
+
+        from lux.core.frame import LuxDataFrame
+        ret_value._parent_df = self
+        # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
+        # this is different from the part in describe, simply to faciliate the visualization.
+        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+
+        # add to history
+        self._log_events("notnull", ret_value)
+        return ret_value
+
+
 
     def unique(self, *args, **kwargs):
         """
