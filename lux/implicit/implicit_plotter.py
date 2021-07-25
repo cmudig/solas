@@ -225,30 +225,36 @@ def process_filter(signal, ldf, ranked_cols, num_vis_cap=5):
             p_df = ldf._parent_df
         c_df = ldf
 
-    # get mask
-    if parent_mask is not None:
-        mask = parent_mask
+    if(set(p_df.columns) != set(c_df.columns)):
+        return VisList([], ldf), []
     else:
-        mask, same_cols = compute_filter_diff(p_df, c_df)
+        # in the following, we assume that the filter is applied by rows instead of by columns
+        # in other words, only rows are dropped, so the columns of the parernt and the child should be the same
+        # get mask
+        if parent_mask is not None:
+            # this information is available only in the `_getitem_bool_array` case
+            mask = parent_mask
+        else:
+            mask, same_cols = compute_filter_diff(p_df, c_df)
 
-    # get cols with large dist change
-    vis_cols = get_col_recs(p_df, c_df)
+        # get cols with large dist change
+        vis_cols = get_col_recs(p_df, c_df)
 
-    # populate vis
-    all_used_cols = set()
-    chart_list = []
-    if rank_type == "child":
-        chart_list.append(plot_filter_count(p_df, mask))
+        # populate vis
+        all_used_cols = set()
+        chart_list = []
+        if rank_type == "child":
+            chart_list.append(plot_filter_count(p_df, mask))
 
-    if p_df is not None:
-        for c in vis_cols[:num_vis_cap]:
-            _v = plot_filter(p_df, [c], mask)
-            chart_list.append(_v)
-            all_used_cols.add(c)
+        if p_df is not None:
+            for c in vis_cols[:num_vis_cap]:
+                _v = plot_filter(p_df, [c], mask)
+                chart_list.append(_v)
+                all_used_cols.add(c)
 
-    vl = VisList(chart_list)
+        vl = VisList(chart_list)
 
-    return vl, list(all_used_cols)
+        return vl, list(all_used_cols)
 
 
 def get_col_recs(parent_df, child_df):
