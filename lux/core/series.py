@@ -301,6 +301,17 @@ class LuxSeries(pd.Series):
     The fix is to catch this the first time a column is pulled into the cache and either clear the history or 
     something else
     """
+    def _log_events(self, op_name):
+        # add to history 
+        name = "Unnamed" if self.name is None else self.name
+        self._history.append_event(op_name, [name]) # df.col
+        if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
+            ret_value.history.edit_event(-1, op_name, [name], rank_type="child")
+        else: 
+            ret_value.history.append_event(op_name, [name], rank_type="child")
+        ## otherwise, there are two logs, one for col_ref, the othere for value_counts
+        ## because it directly copies the history of the parent dataframe
+        self.add_to_parent_history(op_name, [name]) # df
 
     def value_counts(self, *args, **kwargs):
         ret_value = super(LuxSeries, self).value_counts(*args, **kwargs)
@@ -312,16 +323,7 @@ class LuxSeries(pd.Series):
         ret_value.pre_aggregated = True
 
         # add to history 
-        name = "Unnamed" if self.name is None else self.name
-        self._history.append_event("value_counts", [name]) # df.col
-        if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
-            ret_value.history.edit_event(-1, "value_counts", [name], rank_type="child")
-        else: 
-            ret_value.history.append_event("value_counts", [name], rank_type="child")
-        ## otherwise, there are two logs, one for col_ref, the othere for value_counts
-        ## because it directly copies the history of the parent dataframe
-        self.add_to_parent_history("value_counts", [name]) # df
-
+        self._log_events("value_counts")
         return ret_value
 
     def describe(self, *args, **kwargs):
@@ -332,7 +334,7 @@ class LuxSeries(pd.Series):
             if self._parent_df is not None:
                 self._parent_df.history.unfreeze()
 
-        from lux.core.frame import LuxDataFram
+        from lux.core.frame import LuxDataFrame
         name = "Unnamed" if self.name is None else self.name
         ret_value._parent_df = LuxDataFrame({name: self}) 
         # this is different from the part in value_counts, simply to faciliate the visualization.
@@ -341,12 +343,7 @@ class LuxSeries(pd.Series):
         ret_value.pre_aggregated = True
 
         # add to history
-        self._history.append_event("describe", [name])
-        if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
-            ret_value.history.edit_event(-1, "describe", [name], rank_type="child")
-        else: 
-            ret_value.history.append_event("describe", [name], rank_type="child")
-        self.add_to_parent_history("describe", [name])
+        self._log_events("describe")
         return ret_value
 
 
@@ -362,12 +359,7 @@ class LuxSeries(pd.Series):
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
 
         # add to history
-        self._history.append_event("isna", [name])
-        if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
-            ret_value.history.edit_event(-1, "isna", [name], rank_type="child")
-        else: 
-            ret_value.history.append_event("isna", [name], rank_type="child")
-        self.add_to_parent_history("isna", [name])
+        self._log_events("isna")
         return ret_value
 
     def isnull(self, *args, **kwargs):
@@ -382,12 +374,7 @@ class LuxSeries(pd.Series):
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
 
         # add to history
-        self._history.append_event("isna", [name])
-        if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
-            ret_value.history.edit_event(-1, "isna", [name], rank_type="child")
-        else: 
-            ret_value.history.append_event("isna", [name], rank_type="child")
-        self.add_to_parent_history("isna", [name])
+        self._log_events("isna")
         return ret_value
 
     def unique(self, *args, **kwargs):
