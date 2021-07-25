@@ -1151,14 +1151,22 @@ class LuxDataFrame(pd.DataFrame):
         with self.history.pause():
             ret_value = super(LuxDataFrame, self).dropna(*args, **kwargs)
 
-        self.history.append_event("dropna", [], rank_type="parent", child_df=ret_value, filt_key=None)
+        subset = kwargs.get("subset", None)
+        # we leave out one possible case when the user pass subset through *args style
+        # for example, df.dropna("rows", "all", 2, ["Origin"]) listing all parameters in order
+        # but given there are in total three parameters before the subset, 
+        # it seems this is a quite unusual choice
+        cols = subset if subset is not None else []
+        self.history.append_event("dropna", cols, rank_type="parent", child_df=ret_value, filt_key=None)
         if ret_value is not None:  # i.e. inplace = True
-            ret_value.history.append_event("dropna", [], rank_type="child", child_df=None, filt_key=None)
+            ret_value.history.append_event("dropna", cols, rank_type="child", child_df=None, filt_key=None)
 
         return ret_value
 
     def fillna(self, *args, **kwargs):
         affected_cols = []
+        # this might not the case when we pass a dict 
+        # which specify the filled value for some of the columns but not all possibly affected columns
         with self.history.pause():
             m = self.isna().any()
             affected_cols = list(m.index[m])
