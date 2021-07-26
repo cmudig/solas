@@ -25,9 +25,14 @@ python setup.py install
 
 There are two ways to make sure your local changes show up when running locally. 
 
-To rebuild and re-install the local version of `lux` system wide (or conda profile wide) run the below.
+To rebuild and re-install the local version of `lux` system wide (or conda profile wide) run the below. (tbh not totally sure what this script does bc you have to re pip install as well. See below...)
 ```bash
 python setup.py install
+```
+
+To get changes to show up IN OTHER LOCAL folders, you have to re pip install like this:
+```bash
+pip install .
 ```
 
 However since this takes a bit to run it can be cumbersome. To develop faster, run a jupyter notebook __in this repo__ (like `DEMO_NB.ipynb`). Changes will propogate when you kill and re-start jupyter. You do not have to re-run the install script for changes to show up.
