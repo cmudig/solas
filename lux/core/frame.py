@@ -1152,22 +1152,6 @@ class LuxDataFrame(pd.DataFrame):
             ret_value.history.append_event("fillna", affected_cols, rank_type="child")
 
         return ret_value
-<<<<<<< HEAD
-=======
-      
-    # def xs(self, *args, **kwargs):
-    #     '''
-    #     Aslo called by df.loc["a"] with inside variable as a single label,
-    #     but cannot override loc directly since loc returns a _LocIndexer not a dataframe
-    #     '''
-    #     with self.history.pause():
-    #         ret_value = super(LuxDataFrame, self).xs(*args, **kwargs)
-    #     self.history.append_event("xs", [], rank_type="parent", child_df=ret_value, filt_key=None)
-    #     if ret_value is not None: # i.e. inplace = True
-    #         ret_value.history.append_event("xs", [], rank_type="child", child_df=None, filt_key=None)
-
- 
->>>>>>> master
 
     def _slice(self: FrameOrSeries, slobj: slice, axis=0) -> FrameOrSeries:
         """
