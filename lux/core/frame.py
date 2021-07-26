@@ -442,6 +442,7 @@ class LuxDataFrame(pd.DataFrame):
             # from lux.action.implicit_tab import implicit_mre
 
             # TODO: Rewrite these as register action inside default actions
+            # set_trace()
             if self.pre_aggregated:
                 if self.columns.name is not None:
                     self._append_rec(rec_infolist, row_group(self))
@@ -1027,9 +1028,32 @@ class LuxDataFrame(pd.DataFrame):
 
         return ret_value
 
-    # History logging functions
+#     def __repr__(self) -> str:
+#         '''
+#         Called after print(df).
+#         '''
+#         with self.history.pause():
+#             # inside __repr__, iloc function will be called at least for each column one by one. 
+#             # which will then log each column in the dataframe history but provide no much information
+#             ret_str = super(LuxDataFrame, self).__repr__()
+#         return ret_str
+
+#     def _repr_html_(self) -> str:
+#         '''
+#         Called after df._repr_html_.
+#         '''
+#         with self.history.pause():
+#             # inside _repr_html_, iloc function will be called at least for each column one by one. 
+#             # which will then log each column in the dataframe history but provide no much information
+#             ret_str = super(LuxDataFrame, self)._repr_html_()
+#         return ret_str
+
+    # History logging functions 
     def head(self, n: int = 5):
-        ret_frame = super(LuxDataFrame, self).head(n)
+        with self.history.pause():
+            # inside the head function, iloc[:n] will be called
+            # so pause the history to avoid the logging of iloc
+            ret_frame = super(LuxDataFrame, self).head(n)
         self._parent_df = self
 
         # save history on self and returned df
@@ -1125,12 +1149,19 @@ class LuxDataFrame(pd.DataFrame):
             ret_value.history.append_event("fillna", affected_cols, rank_type="child")
 
         return ret_value
+      
+    # def xs(self, *args, **kwargs):
+    #     '''
+    #     Aslo called by df.loc["a"] with inside variable as a single label,
+    #     but cannot override loc directly since loc returns a _LocIndexer not a dataframe
+    #     '''
+    #     with self.history.pause():
+    #         ret_value = super(LuxDataFrame, self).xs(*args, **kwargs)
+    #     self.history.append_event("xs", [], rank_type="parent", child_df=ret_value, filt_key=None)
+    #     if ret_value is not None: # i.e. inplace = True
+    #         ret_value.history.append_event("xs", [], rank_type="child", child_df=None, filt_key=None)
 
-    # @property
-    # def loc(self, *args, **kwargs):  # -> _LocIndexer from pd.core.indexing._LocIndexer
-    #     ret_value = super(LuxDataFrame, self).loc(*args, **kwargs)
-
-    #     return ret_value
+ 
 
     def _slice(self: FrameOrSeries, slobj: slice, axis=0) -> FrameOrSeries:
         """
@@ -1145,6 +1176,18 @@ class LuxDataFrame(pd.DataFrame):
             ret_value.history.append_event("slice", [], rank_type="child", child_df=None, filt_key=None)
 
         return ret_value
+    
+    @property
+    def loc(self, *args, **kwargs):  # -> _LocIndexer from pd.core.indexing._LocIndexer
+        locIndexer_obj = super(LuxDataFrame, self).loc(*args, **kwargs)
+        locIndexer_obj._parent_df = self
+        return locIndexer_obj
+
+    @property
+    def iloc(self, *args, **kwargs):
+        iLocIndexer_obj = super(LuxDataFrame, self).iloc(*args, **kwargs)
+        iLocIndexer_obj._parent_df = self
+        return iLocIndexer_obj
 
     def groupby(self, *args, **kwargs):
         history_flag = False
@@ -1152,7 +1195,11 @@ class LuxDataFrame(pd.DataFrame):
             history_flag = True
         if "history" in kwargs:
             del kwargs["history"]
+        if self.history is not None:
+            self.history.freeze()
         groupby_obj = super(LuxDataFrame, self).groupby(*args, **kwargs)
+        if self.history is not None:
+            self.history.unfreeze()
         for attr in self._metadata:
             groupby_obj.__dict__[attr] = getattr(self, attr, None)
         if history_flag:
