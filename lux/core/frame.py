@@ -1056,7 +1056,7 @@ class LuxDataFrame(pd.DataFrame):
             # so pause the history to avoid the logging of iloc
             ret_frame = super(LuxDataFrame, self).head(n)
         self._parent_df = self
-
+        ret_frame.history = self.history.copy()
         # save history on self and returned df
         self.history.append_event("head", [], n)
         ret_frame.history.append_event("head", [], n)
