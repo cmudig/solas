@@ -959,6 +959,7 @@ class LuxDataFrame(pd.DataFrame):
         Called when selecting like below
             df["col"]
             df[["col_1", "col_2"]]
+        Note: this isnt logged on returned df because all columns would be of interest.
         """
         ret_value = super(LuxDataFrame, self).__getitem__(key)
 
@@ -1028,25 +1029,25 @@ class LuxDataFrame(pd.DataFrame):
 
         return ret_value
 
-#     def __repr__(self) -> str:
-#         '''
-#         Called after print(df).
-#         '''
-#         with self.history.pause():
-#             # inside __repr__, iloc function will be called at least for each column one by one. 
-#             # which will then log each column in the dataframe history but provide no much information
-#             ret_str = super(LuxDataFrame, self).__repr__()
-#         return ret_str
+    def __repr__(self) -> str:
+        '''
+        Called after print(df).
+        '''
+        with self.history.pause():
+            # inside __repr__, iloc function will be called at least for each column one by one. 
+            # which will then log each column in the dataframe history but provide no much information
+            ret_str = super(LuxDataFrame, self).__repr__()
+        return ret_str
 
-#     def _repr_html_(self) -> str:
-#         '''
-#         Called after df._repr_html_.
-#         '''
-#         with self.history.pause():
-#             # inside _repr_html_, iloc function will be called at least for each column one by one. 
-#             # which will then log each column in the dataframe history but provide no much information
-#             ret_str = super(LuxDataFrame, self)._repr_html_()
-#         return ret_str
+    def _repr_html_(self) -> str:
+        '''
+        Called after df._repr_html_.
+        '''
+        with self.history.pause():
+            # inside _repr_html_, iloc function will be called at least for each column one by one. 
+            # which will then log each column in the dataframe history but provide no much information
+            ret_str = super(LuxDataFrame, self)._repr_html_()
+        return ret_str
 
     # History logging functions 
     def head(self, n: int = 5):
@@ -1055,14 +1056,15 @@ class LuxDataFrame(pd.DataFrame):
             # so pause the history to avoid the logging of iloc
             ret_frame = super(LuxDataFrame, self).head(n)
         self._parent_df = self
-
+        ret_frame.history = self.history.copy()
         # save history on self and returned df
         self.history.append_event("head", [], n)
         ret_frame.history.append_event("head", [], n)
         return ret_frame
 
     def tail(self, n: int = 5):
-        ret_frame = super(LuxDataFrame, self).tail(n)
+        with self.history.pause():
+            ret_frame = super(LuxDataFrame, self).tail(n)
         self._parent_df = self
 
         # save history on self and returned df
@@ -1091,7 +1093,8 @@ class LuxDataFrame(pd.DataFrame):
         return ret_frame
 
     def query(self, expr: str, inplace: bool = False, **kwargs):
-        ret_value = super(LuxDataFrame, self).query(expr, inplace, **kwargs)
+        with self.history.pause():
+            ret_value = super(LuxDataFrame, self).query(expr, inplace, **kwargs)
 
         self.history.append_event("query", [], rank_type="parent", child_df=ret_value, filt_key=None)
         if ret_value is not None:  # i.e. inplace = True
@@ -1149,19 +1152,6 @@ class LuxDataFrame(pd.DataFrame):
             ret_value.history.append_event("fillna", affected_cols, rank_type="child")
 
         return ret_value
-      
-    # def xs(self, *args, **kwargs):
-    #     '''
-    #     Aslo called by df.loc["a"] with inside variable as a single label,
-    #     but cannot override loc directly since loc returns a _LocIndexer not a dataframe
-    #     '''
-    #     with self.history.pause():
-    #         ret_value = super(LuxDataFrame, self).xs(*args, **kwargs)
-    #     self.history.append_event("xs", [], rank_type="parent", child_df=ret_value, filt_key=None)
-    #     if ret_value is not None: # i.e. inplace = True
-    #         ret_value.history.append_event("xs", [], rank_type="child", child_df=None, filt_key=None)
-
- 
 
     def _slice(self: FrameOrSeries, slobj: slice, axis=0) -> FrameOrSeries:
         """
@@ -1169,6 +1159,7 @@ class LuxDataFrame(pd.DataFrame):
         df.loc[33:55] but cannot override loc directly since loc returns a _LocIndexer
         not a dataframe
         """
+        # with self.history.pause():
         ret_value = super(LuxDataFrame, self)._slice(slobj, axis)
 
         self.history.append_event("slice", [], rank_type="parent", child_df=ret_value, filt_key=None)
