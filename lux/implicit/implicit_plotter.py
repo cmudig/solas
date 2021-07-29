@@ -269,7 +269,8 @@ def get_col_recs(parent_df, child_df):
 
     # TODO store this on the df so dont have to recalc so much
     # TODO calc distance for 2d as well
-    for c in parent_df.columns:
+    valid_columns = set(parent_df.columns) & set(child_df.columns)
+    for c in valid_columns:
         p_data = parent_df[c].dropna().values
         c_data = child_df[c].dropna().values
 
