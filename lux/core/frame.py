@@ -1159,9 +1159,9 @@ class LuxDataFrame(pd.DataFrame):
         # But by specifying all possible parameters originally hidden in the *args and *kwargs,
         # we could know exactly wha subset is. 
         cols = subset if subset is not None else []
-        self.history.append_event("dropna", cols, rank_type="parent", child_df=ret_value, filt_key=None)
+        self.history.append_event("dropna", cols, rank_type="parent", child_df=ret_value, filt_key=None, filter_axis=axis)
         if ret_value is not None:  # i.e. inplace = True
-            ret_value.history.append_event("dropna", cols, rank_type="child", child_df=None, filt_key=None)
+            ret_value.history.append_event("dropna", cols, rank_type="child", child_df=None, filt_key=None, filter_axis=axis)
 
         return ret_value
 
