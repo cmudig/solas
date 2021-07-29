@@ -212,6 +212,7 @@ def process_filter(signal, ldf, ranked_cols, num_vis_cap=5):
     rank_type = signal.kwargs.get("rank_type", None)
     child_df = signal.kwargs.get("child_df", None)
     parent_mask = signal.kwargs.get("filt_key", None)
+    filter_axis = signal.kwargs.get("filter_axis", None)
 
     # assign parent and child
     p_df, c_df = None, None
@@ -225,7 +226,8 @@ def process_filter(signal, ldf, ranked_cols, num_vis_cap=5):
             p_df = ldf._parent_df
         c_df = ldf
 
-    if(set(p_df.columns) != set(c_df.columns)):
+    if filter_axis == 0 or filter_axis == "columns":
+        # we add this conditional statement to avoid drawing filter visualization for dropna(axis="columns")
         return VisList([], ldf), []
     else:
         # in the following, we assume that the filter is applied by rows instead of by columns
