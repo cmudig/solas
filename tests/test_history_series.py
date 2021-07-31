@@ -25,14 +25,14 @@ def _check_log(df, op_name, parent_status=None, cols=None):
         assert set(df.history[-1].cols) == set(cols), "These columns should be logged as attributes of the event {}".format(cols)
 
 def test_unique(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     new_df = df["Cylinders"]
     unique_values = new_df.unique()
     _check_log(df, "unique", parent_status="parent", cols=["Cylinders"])
     _check_log(df, "unique", cols=["Cylinders"])
 
 def test_value_counts(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     new_df = df["Cylinders"]
     ret_df = new_df.value_counts()
     _check_log(df, "value_counts", parent_status="parent", cols=["Cylinders"])

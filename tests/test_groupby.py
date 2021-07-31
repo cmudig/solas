@@ -26,7 +26,7 @@ def _check_log(df, op_name, parent_status=None, cols=None, expected_length=1):
 
 def test_agg(global_var):
     # case 1 when passes a single function
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.agg(sum)
@@ -34,7 +34,7 @@ def test_agg(global_var):
     assert new_df.pre_aggregated
 
     # case 2 when passes a single function string
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.agg("mean")
@@ -42,7 +42,7 @@ def test_agg(global_var):
     assert new_df.pre_aggregated
 
     # case 3 when passes a list of functions
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.agg(["std"])
@@ -50,7 +50,7 @@ def test_agg(global_var):
     assert new_df.pre_aggregated
 
     # case 4 when passes a dict
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.agg({"Horsepower": "var"})
@@ -60,7 +60,7 @@ def test_agg(global_var):
 
 
 def test_agg_size(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.size()
@@ -68,7 +68,7 @@ def test_agg_size(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_mean(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.mean()
@@ -77,7 +77,7 @@ def test_agg_mean(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_min(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.min()
@@ -85,7 +85,7 @@ def test_agg_min(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_max(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.max()
@@ -93,7 +93,7 @@ def test_agg_max(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_count(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.count()
@@ -101,7 +101,7 @@ def test_agg_count(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_sum(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.sum()
@@ -109,7 +109,7 @@ def test_agg_sum(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_prod(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.prod()
@@ -117,7 +117,7 @@ def test_agg_prod(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_median(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.median()
@@ -125,7 +125,7 @@ def test_agg_median(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_std(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.std()
@@ -133,7 +133,7 @@ def test_agg_std(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_var(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.var()
@@ -141,7 +141,7 @@ def test_agg_var(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_sem(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.sem()
@@ -149,7 +149,7 @@ def test_agg_sem(global_var):
     assert new_df.pre_aggregated
 
 def test_agg_skew(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df[["Horsepower", "Brand", "Year"]].groupby("Brand")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.skew()
@@ -157,7 +157,7 @@ def test_agg_skew(global_var):
     assert new_df.pre_aggregated
 
 def test_filter(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df_groupby = df.groupby("Origin")
     _check_log(df_groupby, "groupby")
     new_df = df_groupby.filter(lambda x: x["Weight"].mean() > 3000)
@@ -165,14 +165,14 @@ def test_filter(global_var):
     assert not new_df.pre_aggregated
 
 def test_get_group(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     new_df = df.groupby("Origin").get_group("Japan")
     assert new_df.history[0].op_name == "groupby"
     _check_log(new_df, "groupby")
     assert not new_df.pre_aggregated
 
 def test_series_groupby(global_var):
-    df = pytest.car_df.copy(deep=True)
+    df = pd.read_csv("lux/data/car.csv")
     df._repr_html_()
     new_ser = df.set_index("Brand")["Displacement"].groupby(level=0).agg("mean")
     _check_log(new_ser, "mean", parent_status="child", cols=[], expected_length=3)
