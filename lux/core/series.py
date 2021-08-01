@@ -142,12 +142,16 @@ class LuxSeries(pd.Series):
         # Default column name 0 causes errors
         if self.name is None:
             self.name = "Unnamed"
-
-        ldf = LuxDataFrame(self)
-
-        ldf._parent_df = (
-            self._parent_df
-        )  # tbd if this is good or bad, dont think I ever need the series itself
+        child_df = None
+        if self._parent_df is not None and isinstance(self._parent_df, LuxDataFrame):
+            ldf = self._parent_df
+            ldf._parent_df = None # do we need information about the grandparent?
+            child_df = LuxDataFrame(self)
+        else:
+            ldf = LuxDataFrame(self)
+            ldf._parent_df = (
+                self._parent_df
+            )  # tbd if this is good or bad, dont think I ever need the series itself
         self._ldf = ldf
 
         try:
@@ -174,7 +178,7 @@ class LuxSeries(pd.Series):
 
 
                 # df_to_display.maintain_recs() # compute the recommendations (TODO: This can be rendered in another thread in the background to populate self._widget)
-                ldf.maintain_recs(is_series="Series")
+                ldf.maintain_recs(is_series="Series", child=child_df)
 
                 # Observers(callback_function, listen_to_this_variable)
                 ldf._widget.observe(ldf.remove_deleted_recs, names="deletedIndices")
@@ -335,8 +339,8 @@ class LuxSeries(pd.Series):
                 self._parent_df.history.unfreeze()
 
         from lux.core.frame import LuxDataFrame
-        name = "Unnamed" if self.name is None else self.name
-        ret_value._parent_df = LuxDataFrame({name: self}) 
+        # name = "Unnamed" if self.name is None else self.name
+        ret_value._parent_df = self
         # this is different from the part in value_counts, simply to faciliate the visualization.
         # sinc in the boxplot, the whole dataframe is needed.
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
