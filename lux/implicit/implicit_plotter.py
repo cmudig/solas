@@ -69,7 +69,7 @@ def generate_vis_from_signal(signal: Event, ldf: LuxDataFrame, ranked_cols=[]):
     elif signal.op_name == "isna" or signal.op_name == "notnull":
         vis_list, used_cols = process_null_plot(signal, ldf)
 
-    elif signal.cols:  # generic recs
+    elif signal.cols and not ldf.pre_aggregated:  # generic recs
         vis_list, used_cols = process_generic(signal, ldf)
 
     ldf.history.unfreeze()
