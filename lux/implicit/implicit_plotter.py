@@ -57,6 +57,7 @@ def generate_vis_from_signal(signal: Event, ldf: LuxDataFrame, ranked_cols=[]):
         or signal.op_name == "slice"
         or signal.op_name == "gb_filter"
         or signal.op_name == "loc"
+        or signal.op_name == "iloc"
     ):
 
         vis_list, used_cols = process_filter(signal, ldf, ranked_cols)
