@@ -56,6 +56,7 @@ def generate_vis_from_signal(signal: Event, ldf: LuxDataFrame, ranked_cols=[]):
         or signal.op_name == "query"
         or signal.op_name == "slice"
         or signal.op_name == "gb_filter"
+        or signal.op_name == "loc"
     ):
 
         vis_list, used_cols = process_filter(signal, ldf, ranked_cols)
@@ -320,14 +321,20 @@ def compute_filter_diff(old_df, filt_df):
         _t = filt_df
         filt_df = old_df
         old_df = _t
-
-    _d = old_df.merge(filt_df, indicator=True, how="left")
-    indicator = _d._merge == "both"  # .astype(int)
-
-    # which cols change? this isnt very informative since
-    # many columns change other than the filter.
-    same_cols = list(old_df.columns[old_df.nunique() == filt_df.nunique()])
-
+    # this only works when the parent and child dataframe share a set of columns
+    # while in the loc/iloc cases, it is possible that filters are applied to rows and columns together.
+    # therefore we would choose to merge according to their indices.
+    # Nevertheless, the current method is the safest and will always be our first choice if possible
+    if len(old_df.columns) == len(filt_df.columns):
+        _d = old_df.merge(filt_df, indicator=True, how="left")
+        indicator = _d._merge == "both"  # .astype(int)
+        # which cols change? this isnt very informative since
+        # many columns change other than the filter.
+        same_cols = list(old_df.columns[old_df.nunique() == filt_df.nunique()])
+    else:
+        _d = old_df.merge(filt_df, indicator=True, how="left", left_index=True, right_index=True)
+        indicator = _d._merge == "both"  # .astype(int)
+        same_cols = [column for column in old_df.columns if column not in filt_df.columns]
     return indicator, same_cols
 
 
