@@ -3,6 +3,7 @@ from lux.vis.Vis import Vis
 from lux.vis.CustomVis import CustomVis
 from lux.history.event import Event
 from lux.core.frame import LuxDataFrame
+from lux.core.series import LuxSeries
 import lux.utils.defaults as lux_default
 
 from lux.implicit import cg_plotter
@@ -163,7 +164,11 @@ def process_describe(signal, ldf):
         or  (len(ldf) == 11 and all(ldf.index == ["count", "unique", "top", "freq", "mean", "std", "min", "25%", "50%", "75%", "max"])) # the mixed case
         ) 
     ):
-        plot_df = ldf._parent_df
+        if isinstance(ldf._parent_df, LuxSeries):
+            name = "Unnamed" if ldf._parent_df.name is None else ldf._parent_df.name
+            plot_df = LuxDataFrame({name: ldf._parent_df})
+        else:
+            plot_df = ldf._parent_df
     else:
         plot_df = ldf
     
