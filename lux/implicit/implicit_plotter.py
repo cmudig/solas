@@ -1,9 +1,11 @@
+import pandas as pd
 from lux.vis.VisList import VisList
 from lux.vis.Vis import Vis
 from lux.vis.CustomVis import CustomVis
 from lux.history.event import Event
 from lux.core.frame import LuxDataFrame
 from lux.core.series import LuxSeries
+from lux.core.groupby import LuxGroupBy
 import lux.utils.defaults as lux_default
 
 from lux.implicit import cg_plotter
@@ -51,7 +53,8 @@ def generate_vis_from_signal(signal: Event, ldf: LuxDataFrame, ranked_cols=[]):
 
     elif signal.op_name == "describe":
         vis_list, used_cols = process_describe(signal, ldf)
-
+    elif signal.op_name == "gb_describe":
+        vis_list, used_cols = process_gb_describe(signal, ldf)
     elif (
         signal.op_name == "filter"
         or signal.op_name == "query"
@@ -139,6 +142,41 @@ def process_value_counts(signal, ldf):
 #####################
 # DESCRIBE plotting #
 #####################
+def process_gb_describe(signal, ldf):
+    plot_df = None
+    if (ldf._parent_df is not None
+        and isinstance(ldf._parent_df,  LuxGroupBy)
+        and isinstance(ldf._parent_df._parent_df, LuxDataFrame)
+    ):
+        plot_df = ldf._parent_df._parent_df
+        plot_df.history.freeze()
+
+        groupby_attr = ldf.index.name
+        plot_df.maintain_metadata()
+        filter_vals = plot_df.unique_values[groupby_attr]
+
+        if isinstance(ldf.columns, pd.MultiIndex):
+            groupby_cols = list(ldf.columns.get_level_values(0).unique())
+            collection = []
+            data_types = dict(plot_df.dtypes)
+            for col in groupby_cols:
+                for attr_val in filter_vals:
+                    if data_types[col] == object or plot_df._data_type[col] == "nominal":
+                        v = Vis([lux.Clause(col, mark_type="bar"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
+                    elif plot_df._data_type[col] == "temporal":
+                        v = Vis([lux.Clause(col, mark_type="line"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
+                    else:
+                        # it is then numeric so it is safe to draw boxplot.
+                        v = Vis([lux.Clause(col, mark_type="boxplot"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
+                    collection.append(v)
+
+            vl = VisList(collection)
+            return vl, []
+        else:
+            return VisList([]), []
+    else:
+        return VisList([]), []
+
 def process_describe(signal, ldf):
     """
     Plots boxplots of either parent df if this is the describe df or of this df
