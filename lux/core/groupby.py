@@ -130,6 +130,25 @@ class LuxGroupBy(pd.core.groupby.groupby.GroupBy):
         ret_value._parent_df = self
         return ret_value
 
+    def describe(self, *args, **kwargs):
+        with self.history.pause():  # calls unique internally
+            ret_frame = super(LuxGroupBy, self).describe(*args, **kwargs)
+
+        ret_frame._parent_df = self
+        ret_frame.history = self.history.copy()
+
+        if isinstance(ret_frame.columns, pd.MultiIndex):
+            # if the groupby object 
+            used_cols = pd.unique(list(ret_frame.columns.get_level_values(0))).tolist()
+        else:
+            used_cols = []
+
+        # save history on self and returned df
+        self.history.append_event("gb_describe", used_cols, rank_type="parent", *args, **kwargs)
+        ret_frame.history.append_event("gb_describe", used_cols, rank_type="child")
+        ret_frame.pre_aggregated = True  # this doesnt do anything rn to affect plotting
+        return ret_frame
+
     ##################
     ## agg functions #
     ##################
