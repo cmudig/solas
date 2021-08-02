@@ -36,14 +36,14 @@ import pandas as pd
 
 
 def test_describe(global_var):
-    df = pytest.college_df
+    df = pd.read_csv("lux/data/college.csv")
     summary = df.describe()
     summary._ipython_display_()
     assert len(summary.columns) == 10
 
 
 def test_convert_dtype(global_var):
-    df = pytest.college_df
+    df = pd.read_csv("lux/data/college.csv")
     cdf = df.convert_dtypes()
     cdf._ipython_display_()
-    assert list(cdf.recommendation.keys()) == ["Correlation", "Distribution", "Occurrence", "Enhance"]
+    assert set(cdf.recommendation.keys()) == set(["Correlation", "Distribution", "Occurrence"])

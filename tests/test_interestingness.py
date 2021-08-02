@@ -22,11 +22,13 @@ from lux.interestingness.interestingness import interestingness
 
 # The following test cases are labelled for vis with <Ndim, Nmsr, Nfilter>
 def test_interestingness_1_0_0(global_var):
-    df = pytest.car_df
+    df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
 
+    df.history.clear()
     df.set_intent([lux.Clause(attribute="Origin")])
     df._ipython_display_()
+
     # check that top recommended enhance graph score is not none and that ordering makes intuitive sense
     assert interestingness(df.recommendation["Enhance"][0], df) != None
     rank1 = -1
@@ -61,9 +63,9 @@ def test_interestingness_1_0_0(global_var):
 
 
 def test_interestingness_1_0_1(global_var):
-    df = pytest.car_df
+    df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-
+    df.history.clear()
     df.set_intent(
         [
             lux.Clause(attribute="Origin", filter_op="=", value="USA"),
@@ -77,9 +79,9 @@ def test_interestingness_1_0_1(global_var):
 
 def test_interestingness_0_1_0(global_var):
     lux.config.set_executor_type("Pandas")
-    df = pytest.car_df
+    df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-
+    df.history.clear()
     df.set_intent([lux.Clause(attribute="Horsepower")])
     df._ipython_display_()
     # check that top recommended enhance graph score is not none and that ordering makes intuitive sense
@@ -122,9 +124,9 @@ def test_interestingness_0_1_0(global_var):
 
 
 def test_interestingness_0_1_1(global_var):
-    df = pytest.car_df
+    df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-
+    df.history.clear()
     df.set_intent(
         [
             lux.Clause(attribute="Origin", filter_op="=", value="?"),
@@ -139,9 +141,9 @@ def test_interestingness_0_1_1(global_var):
 
 def test_interestingness_1_1_0(global_var):
     lux.config.set_executor_type("Pandas")
-    df = pytest.car_df
+    df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-
+    df.history.clear()
     df.set_intent([lux.Clause(attribute="Horsepower"), lux.Clause(attribute="Year")])
     df._ipython_display_()
     # check that top recommended Enhance graph score is not none (all graphs here have same score)
@@ -170,9 +172,9 @@ def test_interestingness_1_1_0(global_var):
 
 
 def test_interestingness_1_1_1(global_var):
-    df = pytest.car_df
+    df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-
+    df.history.clear()
     df.set_intent(
         [
             lux.Clause(attribute="Horsepower"),
@@ -214,7 +216,7 @@ def test_interestingness_1_2_0(global_var):
     from lux.interestingness.interestingness import interestingness
 
     lux.config.set_executor_type("Pandas")
-    df = pytest.car_df
+    df = pd.read_csv("lux/data/car.csv")
     y_clause = Clause(attribute="Name", channel="y")
     color_clause = Clause(attribute="Cylinders", channel="color")
 
@@ -227,9 +229,9 @@ def test_interestingness_1_2_0(global_var):
 
 
 def test_interestingness_0_2_0(global_var):
-    df = pytest.car_df
+    df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-
+    df.history.clear()
     df.set_intent([lux.Clause(attribute="Horsepower"), lux.Clause(attribute="Acceleration")])
     df._ipython_display_()
     # check that top recommended enhance graph score is not none and that ordering makes intuitive sense
@@ -257,9 +259,9 @@ def test_interestingness_0_2_0(global_var):
 
 
 def test_interestingness_0_2_1(global_var):
-    df = pytest.car_df
+    df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-
+    df.history.clear()
     df.set_intent(
         [
             lux.Clause(attribute="Horsepower"),
@@ -297,6 +299,7 @@ def test_interestingness_deviation_nan():
     from lux.vis.Vis import Vis
 
     test["date"] = pd.to_datetime(test["date"], format="%Y-%M-%d")
+    test.history.clear()
     test.set_data_type({"value": "quantitative"})
 
     vis = Vis(["date", "value", "category=A"], test)
