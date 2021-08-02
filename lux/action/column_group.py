@@ -51,6 +51,7 @@ def column_group(ldf):
     if len(ldf.history) and (
         ldf.history._events[-1].op_name == "describe"
         or ldf.history._events[-1].op_name == "value_counts"
+        or ldf.history._events[-1].op_name == "gb_describe"
     ):
         recommendation["collection"] = vlst
         return recommendation
