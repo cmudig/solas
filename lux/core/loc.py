@@ -77,7 +77,8 @@ class LuxLocIndexer(pd.core.indexing._LocIndexer):
     def _lux_copymd(self, ret_value):
         for attr in self._metadata:
             ret_value.__dict__[attr] = getattr(self._parent_df, attr, None)
-        ret_value.history = self._parent_df.history.copy()
+        if hasattr(self._parent_df, "_history"):
+            ret_value.history = getattr(self._parent_df, "_history").copy()
         return ret_value
 
 class iLuxLocIndexer(pd.core.indexing._iLocIndexer):
@@ -152,5 +153,6 @@ class iLuxLocIndexer(pd.core.indexing._iLocIndexer):
     def _lux_copymd(self, ret_value):
         for attr in self._metadata:
             ret_value.__dict__[attr] = getattr(self._parent_df, attr, None)
-        ret_value.history = self._parent_df.history.copy()
+        if hasattr(self._parent_df, "_history"):
+            ret_value.history = getattr(self._parent_df, "_history").copy()
         return ret_value

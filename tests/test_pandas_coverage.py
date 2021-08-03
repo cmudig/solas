@@ -132,12 +132,12 @@ def test_rename3(global_var):
         "col10",
     ]
     df._ipython_display_()
-    assert list(df.recommendation.keys()) == [
+    assert set(df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+    ])
     assert len(df.cardinality) == 10
     assert "col2" in list(df.cardinality.keys())
 
@@ -148,11 +148,11 @@ def test_concat(global_var):
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = pd.concat([df.loc[:, "Name":"Cylinders"], df.loc[:, "Year":"Origin"]], axis="columns")
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+    ])
     assert len(new_df.cardinality) == 5
 
 
@@ -173,12 +173,12 @@ def test_groupby_agg_big(global_var):
     assert len(new_df.cardinality) == 8
     year_vis = list(
         filter(
-            lambda vis: vis.get_attr_by_attr_name("Year") != [],
+            lambda vis: vis.get_attr_by_attr_name("Year (sum)") != [],
             new_df.recommendation["Column Groups"],
         )
     )[0]
     assert year_vis.mark == "bar"
-    assert year_vis.get_attr_by_channel("x")[0].attribute == "Year"
+    assert year_vis.get_attr_by_channel("x")[0].attribute == "Year (sum)"
     new_df = new_df.T
     new_df._ipython_display_()
     year_vis = list(
@@ -229,12 +229,13 @@ def test_query(global_var):
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.query("Weight > 3000")
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(new_df.cardinality) == 10
 
 
@@ -243,12 +244,13 @@ def test_pop(global_var):
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.pop("Weight")
     df._ipython_display_()
-    assert list(df.recommendation.keys()) == [
+    assert set(df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(df.cardinality) == 9
 
 
@@ -267,12 +269,13 @@ def test_get_group(global_var):
     gbobj = df.groupby("Origin")
     new_df = gbobj.get_group("Japan")
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(new_df.cardinality) == 10
 
 
@@ -282,12 +285,13 @@ def test_applymap(global_var):
     mapping = {"USA": 0, "Europe": 1, "Japan": 2}
     df["Origin"] = df[["Origin"]].applymap(mapping.get)
     df._ipython_display_()
-    assert list(df.recommendation.keys()) == [
+    assert set(df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(df.cardinality) == 10
 
 
@@ -296,12 +300,13 @@ def test_strcat(global_var):
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df["combined"] = df["Origin"].str.cat(df["Brand"], sep=", ")
     df._ipython_display_()
-    assert list(df.recommendation.keys()) == [
+    assert set(df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(df.cardinality) == 11
 
 
@@ -323,26 +328,27 @@ def test_change_dtype(global_var):
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df["Cylinders"] = pd.Series(df["Cylinders"], dtype="Int64")
     df._ipython_display_()
-    assert list(df.recommendation.keys()) == [
+    assert set(df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(df.data_type) == 10
 
 
 def test_get_dummies(global_var):
     df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-    new_df = pd.get_dummies(df)
+    new_df = pd.get_dummies(df) # this function ignores the copy of the history to the new dataframe
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+    ])
     assert len(new_df.data_type) == 339
 
 
@@ -352,12 +358,13 @@ def test_drop(global_var):
     new_df = df.drop([0, 1, 2], axis="rows")
     new_df2 = new_df.drop(["Name", "MilesPerGal", "Cylinders"], axis="columns")
     new_df2._ipython_display_()
-    assert list(new_df2.recommendation.keys()) == [
+    assert set(new_df2.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(new_df2.cardinality) == 7
 
 
@@ -367,26 +374,29 @@ def test_merge(global_var):
     new_df = df.drop([0, 1, 2], axis="rows")
     new_df2 = pd.merge(df, new_df, how="left", indicator=True)
     new_df2._ipython_display_()
-    assert list(new_df2.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]  # TODO once bug is fixed
+        "Enhance"
+    ])  # TODO once bug is fixed
     assert len(new_df2.cardinality) == 11
 
 
 def test_prefix(global_var):
     df = pd.read_csv("lux/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-    new_df = df.add_prefix("1_")
+    new_df = df.add_prefix("1_") 
+    # by changing the name, the columns recorded in the history becomes invalid
+    # therefore, the enhance tab does not render
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+    ])
     assert len(new_df.cardinality) == 10
     assert new_df.cardinality["1_Name"] == 300
 
@@ -396,25 +406,27 @@ def test_loc(global_var):
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.loc[:, "Displacement":"Origin"]
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(new_df.cardinality) == 6
     new_df = df.loc[0:10, "Displacement":"Origin"]
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(new_df.cardinality) == 6
     new_df = df.loc[0:10, "Displacement":"Horsepower"]
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == ["Correlation", "Distribution"]
+    assert set(new_df.recommendation.keys()) == set(["Correlation", "Distribution", "Enhance"])
     assert len(new_df.cardinality) == 2
     import numpy as np
 
@@ -430,25 +442,27 @@ def test_iloc(global_var):
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.iloc[:, 3:9]
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(new_df.cardinality) == 6
     new_df = df.iloc[0:11, 3:9]
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == [
+    assert set(new_df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+        "Enhance"
+    ])
     assert len(new_df.cardinality) == 6
     new_df = df.iloc[0:11, 3:5]
     new_df._ipython_display_()
-    assert list(new_df.recommendation.keys()) == ["Correlation", "Distribution"]
+    assert set(new_df.recommendation.keys()) == set(["Correlation", "Distribution", "Enhance"])
     assert len(new_df.cardinality) == 2
     import numpy as np
 
@@ -488,7 +502,8 @@ def check_metadata_equal(df1, df2):
                     elif key in y_info:
                         assert x_info[key] == y_info[key]
 
-        elif attr != "_widget" and attr != "_sampled" and attr != "_message":
+        elif attr != "_widget" and attr != "_sampled" and attr != "_message" and attr != "_history":
+            # this event in the history attribute contains the execution count, so it must be different
             assert getattr(df1, attr) == getattr(df2, attr)
 
 
@@ -638,12 +653,12 @@ def test_read_json(global_var):
     url = "https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/car.json"
     df = pd.read_json(url)
     df._ipython_display_()
-    assert list(df.recommendation.keys()) == [
+    assert set(df.recommendation.keys()) == set([
         "Correlation",
         "Distribution",
         "Occurrence",
         "Temporal",
-    ]
+    ])
     assert len(df.data_type) == 10
 
 
@@ -651,7 +666,7 @@ def test_read_sas(global_var):
     url = "https://github.com/lux-org/lux-datasets/blob/master/data/airline.sas7bdat?raw=true"
     df = pd.read_sas(url, format="sas7bdat")
     df._ipython_display_()
-    assert list(df.recommendation.keys()) == ["Correlation", "Distribution", "Temporal"]
+    assert set(df.recommendation.keys()) == set(["Correlation", "Distribution", "Temporal", "Enhance"])
     assert len(df.data_type) == 6
 
 
@@ -660,4 +675,5 @@ def test_read_multi_dtype(global_var):
     df = pd.read_excel(url)
     with pytest.warns(UserWarning, match="mixed type") as w:
         df._ipython_display_()
-        assert "df['Car Type'] = df['Car Type'].astype(str)" in str(w[-1].message)
+        assert "df['Car Type'] = df['Car Type'].astype(str)" in str(w[0].message)
+        ## because of the new warning, this warning should be the first one instead of the last one.

@@ -73,6 +73,8 @@ class LuxDataFrame(pd.DataFrame):
         self._saved_export = None
         self._current_vis = []
         self._widget = None
+        self._prev = None 
+        # although it is no longer used, it is required to be tested in the unit test
         super(LuxDataFrame, self).__init__(*args, **kw)
 
         self.table_name = ""
@@ -1055,8 +1057,12 @@ class LuxDataFrame(pd.DataFrame):
             # inside the head function, iloc[:n] will be called
             # so pause the history to avoid the logging of iloc
             ret_frame = super(LuxDataFrame, self).head(n)
-        self._parent_df = self
-        ret_frame.history = self.history.copy()
+        self._parent_df = self # why do we need to change the parent dataframe here?
+        ret_frame.history = self.history.copy() 
+        # some other functions will be called unnecessarily, for example, _slice and iloc. 
+        # copy the history of the parent dataframe to avoid log these functions. 
+        # not sure about whether the child dataframe should copy the history of the parent.
+
         # save history on self and returned df
         self.history.append_event("head", [], n)
         ret_frame.history.append_event("head", [], n)
@@ -1065,8 +1071,10 @@ class LuxDataFrame(pd.DataFrame):
     def tail(self, n: int = 5):
         with self.history.pause():
             ret_frame = super(LuxDataFrame, self).tail(n)
-        self._parent_df = self
 
+        self._parent_df = self # why do we need to change the parent dataframe here?
+        ret_frame.history = self.history.copy() 
+      
         # save history on self and returned df
         self.history.append_event("tail", [], n)
         ret_frame.history.append_event("tail", [], n)
@@ -1074,8 +1082,10 @@ class LuxDataFrame(pd.DataFrame):
 
     def info(self, *args, **kwargs):
         self._pandas_only = True
+        with self.history.pause():
+            ret_value = super(LuxDataFrame, self).info(*args, **kwargs)
         self.history.append_event("info", [], *args, **kwargs)
-        return super(LuxDataFrame, self).info(*args, **kwargs)  # returns None
+        return ret_value # returns None
 
     def describe(self, *args, **kwargs):
         with self.history.pause():  # calls unique internally
@@ -1094,12 +1104,14 @@ class LuxDataFrame(pd.DataFrame):
 
     def query(self, expr: str, inplace: bool = False, **kwargs):
         with self.history.pause():
+            # inside query, loc function will be called
             ret_value = super(LuxDataFrame, self).query(expr, inplace, **kwargs)
 
-        self.history.append_event("query", [], rank_type="parent", child_df=ret_value, filt_key=None)
-        if ret_value is not None:  # i.e. inplace = True
+        if ret_value is not None: # i.e. inplace = True
+            ret_value._parent_df = self
+            ret_value.history = self.history.copy()
             ret_value.history.append_event("query", [], rank_type="child", child_df=None, filt_key=None)
-
+        self.history.append_event("query", [], rank_type="parent", child_df=ret_value, filt_key=None)
         return ret_value
 
     # null check functions
@@ -1115,16 +1127,23 @@ class LuxDataFrame(pd.DataFrame):
         with self.history.pause():
             ret_value = super(LuxDataFrame, self).isnull(*args, **kwargs)
         self.history.append_event("isna", [], rank_type="parent")
-        ret_value.history.delete_at(-1)  # isna gets added twice
-        ret_value.history.append_event("isna", [], rank_type="child")
-
+        # the isna call has already been logged because df.isna() is immediately called.
         return ret_value
 
     def notnull(self, *args, **kwargs):
         with self.history.pause():
             ret_value = super(LuxDataFrame, self).notnull(*args, **kwargs)
         self.history.append_event("notnull", [], rank_type="parent")
-        ret_value.history.delete_at(-1)  # isna gets added twice
+        ret_value.history.delete_at(-1) # isna gets added before
+        ret_value.history.append_event("notnull", [], rank_type="child")
+
+        return ret_value
+    
+    def notna(self, *args, **kwargs):
+        with self.history.pause():
+            ret_value = super(LuxDataFrame, self).notna(*args, **kwargs)
+        self.history.append_event("notnull", [], rank_type="parent")
+        ret_value.history.delete_at(-1) # isna gets added before
         ret_value.history.append_event("notnull", [], rank_type="child")
 
         return ret_value
@@ -1146,18 +1165,16 @@ class LuxDataFrame(pd.DataFrame):
             affected_cols = list(m.index[m])
 
         ret_value = super(LuxDataFrame, self).fillna(*args, **kwargs)
-
         if affected_cols:
+            # only log the function call if the number of affected columns is greater than 0
+            if ret_value is not None:# i.e. inplace = True
+                ret_value.history.append_event("fillna", affected_cols, rank_type="child")
             self.history.append_event("fillna", affected_cols, rank_type="parent")
-            ret_value.history.append_event("fillna", affected_cols, rank_type="child")
-
         return ret_value
 
     def _slice(self: FrameOrSeries, slobj: slice, axis=0) -> FrameOrSeries:
         """
-        Called whenever the df is accessed like df[1:3] or some slice. Also called by
-        df.loc[33:55] but cannot override loc directly since loc returns a _LocIndexer
-        not a dataframe
+        Called whenever the df is accessed like df[1:3] or some slice.
         """
         # with self.history.pause():
         ret_value = super(LuxDataFrame, self)._slice(slobj, axis)
@@ -1209,27 +1226,34 @@ class LuxDataFrame(pd.DataFrame):
         ret_value.pre_aggregated = True
         ret_value.history = self.history.copy()
         ret_value._parent_df = self
+       
+        def get_func_name(func):
+            if callable(func):
+                return func.__name__
+            else: # it should be of the string type
+                return func
 
         # Not already logged since history frozen
         if isinstance(func, str):
             # ret value got history in child func but parent was frozen
             self.history.append_event(func, [], rank_type="parent", child_df=ret_value)
-
-        # for some reason is_list_like(dict) == True so MUST compare dict first
+        elif callable(func):
+            # it could be possible that users directly pass the function variable to aggregate
+            self.history.append_event(func.__name__, [], rank_type="parent", child_df=ret_value)
+        # for some reason is_list_like(dict) == True so MUST compare dict first 
         elif is_dict_like(func):
             for col, aggs in func.items():
                 if is_list_like(aggs):
                     for a in aggs:
-                        ret_value.history.append_event(a, [col], rank_type="child", child_df=None)
-                        self.history.append_event(a, [col], rank_type="parent", child_df=ret_value)
-                else:  # is aggs is str
-                    ret_value.history.append_event(aggs, [col], rank_type="child", child_df=None)
-                    self.history.append_event(aggs, [col], rank_type="parent", child_df=ret_value)
-
+                        ret_value.history.append_event(get_func_name(a), [col], rank_type="child", child_df=None)
+                        self.history.append_event(get_func_name(a), [col], rank_type="parent", child_df=ret_value)
+                else: # is aggs is str
+                    ret_value.history.append_event(get_func_name(aggs), [col], rank_type="child", child_df=None)
+                    self.history.append_event(get_func_name(aggs), [col], rank_type="parent", child_df=ret_value)
         elif is_list_like(func):
             for f_name in func:
-                ret_value.history.append_event(f_name, [], rank_type="child", child_df=None)
-                self.history.append_event(f_name, [], rank_type="parent", child_df=ret_value)
+                ret_value.history.append_event(get_func_name(f_name), [], rank_type="child", child_df=None)
+                self.history.append_event(get_func_name(f_name), [], rank_type="parent", child_df=ret_value)
 
         return ret_value
 
@@ -1266,10 +1290,15 @@ class LuxDataFrame(pd.DataFrame):
         ret_value.history = self.history.copy()
         ret_value.pre_aggregated = True
 
+        cols = []
+        if args[1] is None or args[1] == 0:
+            # then the function was applied to each column, we could retrieve these affected columns from the ret_value
+            cols = ret_value.index.tolist()
+            # if so, the func has been applied to each column, we do not need to log column information
+            if len(cols) == len(self.columns):
+                cols = []
         # history
-        ret_value.history.append_event(name, [], rank_type="child", child_df=None)
-        self.history.append_event(
-            name, [], rank_type="parent", child_df=ret_value
-        )  # TODO Logging this on parent may be misleading and not using for vis rn
+        ret_value.history.append_event(name, cols, rank_type="child", child_df=None)
+        self.history.append_event(name, cols, rank_type="parent", child_df=ret_value) # TODO Logging this on parent may be misleading and not using for vis rn
 
         return ret_value

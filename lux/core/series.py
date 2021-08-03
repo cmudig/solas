@@ -263,12 +263,16 @@ class LuxSeries(pd.Series):
             history_flag = True
         if "history" in kwargs:
             del kwargs["history"]
+        if self.history is not None:
+            self.history.freeze()
         groupby_obj = super(LuxSeries, self).groupby(*args, **kwargs)
+        if self.history is not None:
+            self.history.unfreeze()
         for attr in self._metadata:
             groupby_obj.__dict__[attr] = getattr(self, attr, None)
         if history_flag:
             groupby_obj._history = groupby_obj._history.copy()
-            groupby_obj._history.append_event("groupby", *args, **kwargs)
+            groupby_obj._history.append_event("groupby", [], *args, **kwargs)
         groupby_obj.pre_aggregated = True
         return groupby_obj
 
@@ -303,11 +307,14 @@ class LuxSeries(pd.Series):
         ret_value.pre_aggregated = True
 
         # add to history
-        self._history.append_event("value_counts", [self.name])  # df.col
-        ret_value._history.append_event(
-            "value_counts", [self.name], rank_type="child"
-        )  # df.col.value_counts
-        self.add_to_parent_history("value_counts", [self.name])  # df
+        self._history.append_event("value_counts", [self.name]) # df.col
+        if ret_value.history.check_event(-1, op_name="col_ref", cols=[self.name]):
+            ret_value.history.edit_event(-1, "value_counts", [self.name], rank_type="child")
+        else: 
+            ret_value.history.append_event("value_counts", [self.name], rank_type="child")
+        ## otherwise, there are two logs, one for col_ref, the othere for value_counts
+        ## because it directly copies the history of the parent dataframe
+        self.add_to_parent_history("value_counts", [self.name]) # df
 
         return ret_value
 
