@@ -1121,7 +1121,11 @@ class LuxDataFrame(pd.DataFrame):
             ret_value = super(LuxDataFrame, self).isna(*args, **kwargs)
         self.history.append_event("isna", [], rank_type="parent")
         ret_value.history.append_event("isna", [], rank_type="child")
-
+        # column of names like "year", "weak" will be identified by the lux as "temporal" 
+        # no matter what the actual data type is. 
+        # This will cause an error in visualization of this column
+        # therefore we provide overriding data type manually here. 
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
     def isnull(self, *args, **kwargs):
@@ -1129,6 +1133,11 @@ class LuxDataFrame(pd.DataFrame):
             ret_value = super(LuxDataFrame, self).isnull(*args, **kwargs)
         self.history.append_event("isna", [], rank_type="parent")
         # the isna call has already been logged because df.isna() is immediately called.
+        # in fact we do not need to override types here since the isna has already been called inside isnull
+        # we do this more due to the consideration of formalality
+        # the same rationale applies to the notnull and notna
+        # Besides we do not need to worry about the pd.isna since in this case, the df.isna is also finally called.
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
     def notnull(self, *args, **kwargs):
@@ -1138,6 +1147,7 @@ class LuxDataFrame(pd.DataFrame):
         ret_value.history.delete_at(-1) # isna gets added before
         ret_value.history.append_event("notnull", [], rank_type="child")
 
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
     
     def notna(self, *args, **kwargs):
@@ -1147,6 +1157,7 @@ class LuxDataFrame(pd.DataFrame):
         ret_value.history.delete_at(-1) # isna gets added before
         ret_value.history.append_event("notnull", [], rank_type="child")
 
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
     def dropna(self, axis=0, how='any', thresh=None, subset=None, inplace=False):
