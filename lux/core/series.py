@@ -130,6 +130,36 @@ class LuxSeries(pd.Series):
 
         return lux.core.originalSeries(self, copy=False)
 
+    def set_data_type(self, types: dict):
+        """
+        Set the data type for this series
+        overriding the automatically-detected type inferred by Lux
+        which will happen in the _ipython_display when the series is converted to a dataframe
+        thanks to the finalize method, its _type_override will be copied to the dataframe then.
+
+        Parameters
+        ----------
+        types: dict
+            Dictionary that maps the name of this series to a specified Lux Type.
+            If the name is None, the convention is to use "Unnamed"
+            Possible options: "nominal", "quantitative", "id", and "temporal".
+
+        Example
+        ----------
+        df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/absenteeism.csv")
+        df.set_data_type({"ID":"id",
+                          "Reason for absence":"nominal"})
+        """
+        if self._type_override == None:
+            self._type_override = types
+        else:
+            self._type_override = {**self._type_override, **types}
+
+        for attr in types:
+            if types[attr] not in ["nominal", "quantitative", "id", "temporal"]:
+                raise ValueError(
+                    f'Invalid data type option specified for {attr}. Please use one of the following supported types: ["nominal", "quantitative", "id", "temporal"]'
+                )
 
     def _ipython_display_(self):
         from IPython.display import display
@@ -357,6 +387,10 @@ class LuxSeries(pd.Series):
         # this is different from the part in describe, simply to faciliate the visualization.
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
 
+        name = "Unnamed" if self.name is None else self.name
+        # manually set the data type to avoid mistakes like identifying the "Year" as temporal
+        # see set_data_type for a more detailed explanation why this works for the series
+        ret_value.set_data_type({name: "nominal"})
         # add to history
         self._log_events("isna", ret_value)
         return ret_value
@@ -371,6 +405,10 @@ class LuxSeries(pd.Series):
         # this is different from the part in describe, simply to faciliate the visualization.
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
 
+        name = "Unnamed" if self.name is None else self.name
+        # manually set the data type to avoid mistakes like identifying the "Year" as temporal
+        # see set_data_type for a more detailed explanation why this works for the series
+        ret_value.set_data_type({name: "nominal"})
         # add to history
         self._log_events("isna", ret_value)
         return ret_value
@@ -386,6 +424,11 @@ class LuxSeries(pd.Series):
         # this is different from the part in describe, simply to faciliate the visualization.
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
 
+        name = "Unnamed" if self.name is None else self.name
+        # manually set the data type to avoid mistakes like identifying the "Year" as temporal
+        # see set_data_type for a more detailed explanation why this works for the series
+        ret_value.set_data_type({name: "nominal"})
+
         # add to history
         self._log_events("notnull", ret_value)
         return ret_value
@@ -400,6 +443,11 @@ class LuxSeries(pd.Series):
         # this is different from the part in describe, simply to faciliate the visualization.
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
 
+        name = "Unnamed" if self.name is None else self.name
+        # manually set the data type to avoid mistakes like identifying the "Year" as temporal
+        # see set_data_type for a more detailed explanation why this works for the series
+        ret_value.set_data_type({name: "nominal"})
+        
         # add to history
         self._log_events("notnull", ret_value)
         return ret_value
