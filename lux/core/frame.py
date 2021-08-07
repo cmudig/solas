@@ -1071,6 +1071,7 @@ class LuxDataFrame(pd.DataFrame):
 
     def tail(self, n: int = 5):
         with self.history.pause():
+            # slice will be called inside it
             ret_frame = super(LuxDataFrame, self).tail(n)
 
         self._parent_df = self # why do we need to change the parent dataframe here?
