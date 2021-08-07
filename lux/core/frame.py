@@ -759,7 +759,11 @@ class LuxDataFrame(pd.DataFrame):
         check_import_lux_widget()
         import luxwidget  # widget code from other repo
 
-        hJSON = self.history.to_JSON() 
+        # we still want to see the history of the child for the series visualization.
+        if child is not None:
+            hJSON = child.history.to_JSON() 
+        else:
+            hJSON = self.history.to_JSON() 
         # it could be justified to use the parent history in the series case
         widgetJSON = self.to_JSON(input_current_vis=input_current_vis)
 
