@@ -170,8 +170,13 @@ class LuxSeries(pd.Series):
         series_repr = super(LuxSeries, self).__repr__()
 
         # Default column name 0 causes errors
+        # Have a meaningful name so that the user could recognize it 
+        # when we present recommendation for this series 
+        # Also becaus when log the event we use the "Unnamed" as the column name
+        # if the name of the series is unavailable
         if self.name is None:
             self.name = "Unnamed"
+
         child_df = None
         # for series, if its parent is a dataframe, then it is very likely to come from a column reference of it
         # In such cases, we intend to show the visualization of the parent dataframe, 
@@ -375,17 +380,18 @@ class LuxSeries(pd.Series):
                 self._parent_df.history.unfreeze()
 
         from lux.core.frame import LuxDataFrame
-        # name = "Unnamed" if self.name is None else self.name
-        ret_value._parent_df = self
+        name = "Unnamed" if self.name is None else self.name
+        ret_value._parent_df = LuxDataFrame({name: self}) 
         # this is different from the part in value_counts, simply to faciliate the visualization.
-        # sinc in the boxplot, the whole dataframe is needed.
+        # sinc in the boxplot, only this serires is needed.
+        # it is ok to set ret_value._parent_df = self._parent_df but it will include other columns as well
+        # and this approach could not handle the case when the self._parent_df is not avaiable.
         ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
         ret_value.pre_aggregated = True
 
         # add to history
         self._log_events("describe", ret_value)
         return ret_value
-
 
     def isna(self, *args, **kwargs):
         with self._history.pause():
