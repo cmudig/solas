@@ -204,7 +204,11 @@ class LuxSeries(pd.Series):
             # 2) Mixed type, often a result of a "row" acting as a series (df.iterrows, df.iloc[0])
             # Tolerant for NaNs + 1 type
             mixed_dtype = len(set([type(val) for val in self.values])) > 2
-            if ldf._pandas_only or is_dtype_series or mixed_dtype:
+            if ldf._pandas_only or is_dtype_series or (mixed_dtype and not ldf.pre_aggregated):
+                # if the series is pre-aggregated, then we allow the visualization even if the series consist of mixed types.
+                # for example, df["Origin"].describe().
+                # this also works in other cases since we have generally provided visualizations for the aggregated series
+                # in either column_group or implicit tab.
                 print(series_repr)
                 ldf._pandas_only = False
             else:
