@@ -51,7 +51,7 @@ def custom(ldf):
     return recommendation
 
 
-def custom_actions(ldf):
+def custom_actions(ldf, **kwargs):
     """
     Generates user-defined vis based on globally defined actions.
 
@@ -59,6 +59,9 @@ def custom_actions(ldf):
     ----------
     ldf : lux.core.frame
         LuxDataFrame with underspecified intent.
+
+    filter_cols: list or None
+        attributes that must be used as one of channels in each returned chart from the action tab
 
     Returns
     -------
@@ -72,9 +75,10 @@ def custom_actions(ldf):
             if display_condition is None or (display_condition is not None and display_condition(ldf)):
                 args = lux.config.actions[action_name].args
                 if args:
-                    recommendation = lux.config.actions[action_name].action(ldf, args)
+                    recommendation = lux.config.actions[action_name].action(ldf, args, **kwargs)
+                    # filter_cols then passed to each action tab
                 else:
-                    recommendation = lux.config.actions[action_name].action(ldf)
+                    recommendation = lux.config.actions[action_name].action(ldf, **kwargs)
                 recommendations.append(recommendation)
         return recommendations
     else:

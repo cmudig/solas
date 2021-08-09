@@ -461,9 +461,10 @@ class LuxDataFrame(pd.DataFrame):
                 self.index.nlevels >= 2 or self.columns.nlevels >= 2
             ):
                 from lux.action.custom import custom_actions
-
+                filter_cols = child.columns.to_list() if child is not None else None
                 # generate vis from globally registered actions and append to dataframe
-                custom_action_collection = custom_actions(self)
+                custom_action_collection = custom_actions(self, filter_cols=filter_cols)
+                # filter_cols specify what attributes the returned vis must have as one of its channels
                 for rec in custom_action_collection:
                     self._append_rec(rec_infolist, rec)
                 lux.config.update_actions["flag"] = False
@@ -475,11 +476,6 @@ class LuxDataFrame(pd.DataFrame):
             for rec_info in rec_infolist:
                 action_type = rec_info["action"]
                 vlist = rec_info["collection"]
-                if child is not None:
-                    # leave room for further inclusion of the dataframe.
-                    valid_columns = child.columns.to_list()
-                    # only select vis that have at least one attributes in valid_columns as one of its intent
-                    vlist = [vis for vis in vlist if any([len(vis.get_attr_by_attr_name(attr)) > 0 for attr in valid_columns])]
                 if len(vlist) > 0:
                     self._recommendation[action_type] = vlist
                     rec_info["collection"] = vlist
