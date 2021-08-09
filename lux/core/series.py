@@ -191,12 +191,13 @@ class LuxSeries(pd.Series):
         # it involves the filter, and including the charts for the parent dataframe (df in this case) will be confusing
         # are charts about the dataframe before or after the visualization?
         # therefore, we choose not to including the charts for the parent dataframe in this case
-        mre_op_name = self.history.get_mre([self.name])[0].op_name
+        most_recent_event, hist_index = self.history.get_mre([self.name])
+        most_recent_op = most_recent_event.op_name if most_recent_event is not None else None
         if (self._parent_df is not None and 
                 isinstance(self._parent_df, LuxDataFrame) and 
                 not self.pre_aggregated
-                and mre_op_name != "iloc"
-                and mre_op_name != "loc"
+                and most_recent_op != "iloc"
+                and most_recent_op != "loc"
             ):
             ldf = self._parent_df
             ldf._parent_df = None #se do we need information about the grandparent?
