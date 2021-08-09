@@ -23,7 +23,7 @@ from lux.utils.utils import get_filter_specs
 from IPython.core.debugger import set_trace
 
 
-def add_filter(ldf):
+def add_filter(ldf, **kwargs):
     """
     Iterates over all possible values of a categorical variable and generates visualizations where each categorical value filters the data.
 
@@ -145,16 +145,13 @@ def add_filter(ldf):
         # remove the one with the exactly same filter as current vis
         arr = [_arr for _arr in arr if _arr != last.value]
         output.append(lux.Clause(last.attribute, last.attribute, arr))
-
     vlist = lux.vis.VisList.VisList(output, ldf)
     vlist_copy = lux.vis.VisList.VisList(output, ldf)
     for i in range(len(vlist_copy)):
         vlist[i].score = interestingness(vlist_copy[i], ldf)
     col_order = ldf.history.get_implicit_intent(ldf.columns)
     vlist.sort(intent_cols=col_order)
+    vlist.filter(**kwargs)
     vlist = vlist.showK()
-    if recommendation["action"] == "Similarity":
-        recommendation["collection"] = vlist
-    else:
-        recommendation["collection"] = vlist
+    recommendation["collection"] = vlist
     return recommendation

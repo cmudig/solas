@@ -21,7 +21,7 @@ from lux.interestingness.interestingness import interestingness
 from lux.utils import utils
 
 
-def temporal(ldf):
+def temporal(ldf, **kwargs):
     """
     Generates line charts for temporal fields at different granularities.
     Parameters

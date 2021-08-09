@@ -23,7 +23,7 @@ from IPython.core.debugger import set_trace
 
 
 # change ignore_transpose to false for now.
-def correlation(ldf: LuxDataFrame, ignore_transpose: bool = True):
+def correlation(ldf: LuxDataFrame, ignore_transpose: bool = True, **kwargs):
     """
     Generates bivariate visualizations that represent all pairwise relationships in the data.
 
@@ -89,6 +89,7 @@ def correlation(ldf: LuxDataFrame, ignore_transpose: bool = True):
 
     col_order = ldf.history.get_implicit_intent(ldf.columns)
     vlist.sort(intent_cols=col_order)
+    vlist.filter(**kwargs)
     vlist = vlist.showK()
     recommendation["collection"] = vlist
     return recommendation

@@ -22,7 +22,7 @@ from lux.vis.VisList import VisList
 import pandas as pd
 
 
-def row_group(ldf):
+def row_group(ldf, **kwargs):
     recommendation = {
         "action": "Row Groups",
         "description": "Shows charts of possible visualizations with respect to the row-wise index.",
