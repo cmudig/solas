@@ -21,6 +21,7 @@ from lux.history.history import History
 from lux.utils.message import Message
 from lux.implicit.utils import rename_from_history
 
+
 from pandas._typing import (
     FrameOrSeries,
     ArrayLike,
@@ -129,6 +130,36 @@ class LuxSeries(pd.Series):
 
         return lux.core.originalSeries(self, copy=False)
 
+    def set_data_type(self, types: dict):
+        """
+        Set the data type for this series
+        overriding the automatically-detected type inferred by Lux
+        which will happen in the _ipython_display when the series is converted to a dataframe
+        thanks to the finalize method, its _type_override will be copied to the dataframe then.
+
+        Parameters
+        ----------
+        types: dict
+            Dictionary that maps the name of this series to a specified Lux Type.
+            If the name is None, the convention is to use "Unnamed"
+            Possible options: "nominal", "quantitative", "id", and "temporal".
+
+        Example
+        ----------
+        df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/absenteeism.csv")
+        df.set_data_type({"ID":"id",
+                          "Reason for absence":"nominal"})
+        """
+        if self._type_override == None:
+            self._type_override = types
+        else:
+            self._type_override = {**self._type_override, **types}
+
+        for attr in types:
+            if types[attr] not in ["nominal", "quantitative", "id", "temporal"]:
+                raise ValueError(
+                    f'Invalid data type option specified for {attr}. Please use one of the following supported types: ["nominal", "quantitative", "id", "temporal"]'
+                )
 
     def _ipython_display_(self):
         from IPython.display import display
@@ -139,10 +170,15 @@ class LuxSeries(pd.Series):
         series_repr = super(LuxSeries, self).__repr__()
 
         # Default column name 0 causes errors
+        # Have a meaningful name so that the user could recognize it 
+        # when we present recommendation for this series 
+        # Also becaus when log the event we use the "Unnamed" as the column name
+        # if the name of the series is unavailable
         if self.name is None:
-            self.name = " "
+            self.name = "Unnamed"
 
         ldf = LuxDataFrame(self)
+
         ldf._parent_df = (
             self._parent_df
         )  # tbd if this is good or bad, dont think I ever need the series itself
@@ -168,6 +204,8 @@ class LuxSeries(pd.Series):
                     self._toggle_pandas_display = False
                 else:
                     self._toggle_pandas_display = True
+
+
 
                 # df_to_display.maintain_recs() # compute the recommendations (TODO: This can be rendered in another thread in the background to populate self._widget)
                 ldf.maintain_recs(is_series="Series")
@@ -219,7 +257,6 @@ class LuxSeries(pd.Series):
 
     @property
     def recommendation(self):
-        from lux.core.frame import LuxDataFrame
 
         if self._recommendation is not None and self._recommendation == {}:
             if self.name is None:
@@ -298,25 +335,130 @@ class LuxSeries(pd.Series):
     The fix is to catch this the first time a column is pulled into the cache and either clear the history or 
     something else
     """
+    def _log_events(self, op_name, ret_value):
+        # add to history 
+        name = "Unnamed" if self.name is None else self.name
+        self._history.append_event(op_name, [name]) # df.col
+        if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
+            ret_value.history.edit_event(-1, op_name, [name], rank_type="child")
+        else: 
+            ret_value.history.append_event(op_name, [name], rank_type="child")
+        ## otherwise, there are two logs, one for col_ref, the othere for value_counts
+        ## because it directly copies the history of the parent dataframe
+        self.add_to_parent_history(op_name, [name]) # df
 
     def value_counts(self, *args, **kwargs):
         ret_value = super(LuxSeries, self).value_counts(*args, **kwargs)
 
-        ret_value._parent_df = self
-        ret_value._history = self._parent_df._history.copy()
+        ret_value._parent_df = self 
+        # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
+        ret_value._history = self._history.copy() # self._parent_df._history.copy()
+        # is there a need to copy from the history of the grandparent?
+        ret_value.pre_aggregated = True
+
+        # add to history 
+        self._log_events("value_counts", ret_value)
+        return ret_value
+
+    def describe(self, *args, **kwargs):
+        with self.history.pause():
+            if self._parent_df is not None:
+                self._parent_df.history.freeze()
+            ret_value = super(LuxSeries, self).describe(*args, **kwargs)
+            if self._parent_df is not None:
+                self._parent_df.history.unfreeze()
+
+        from lux.core.frame import LuxDataFrame
+        name = "Unnamed" if self.name is None else self.name
+        ret_value._parent_df = LuxDataFrame({name: self}) 
+        # this is different from the part in value_counts, simply to faciliate the visualization.
+        # sinc in the boxplot, only this serires is needed.
+        # it is ok to set ret_value._parent_df = self._parent_df but it will include other columns as well
+        # and this approach could not handle the case when the self._parent_df is not avaiable.
+        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
         ret_value.pre_aggregated = True
 
         # add to history
-        self._history.append_event("value_counts", [self.name]) # df.col
-        if ret_value.history.check_event(-1, op_name="col_ref", cols=[self.name]):
-            ret_value.history.edit_event(-1, "value_counts", [self.name], rank_type="child")
-        else: 
-            ret_value.history.append_event("value_counts", [self.name], rank_type="child")
-        ## otherwise, there are two logs, one for col_ref, the othere for value_counts
-        ## because it directly copies the history of the parent dataframe
-        self.add_to_parent_history("value_counts", [self.name]) # df
-
+        self._log_events("describe", ret_value)
         return ret_value
+
+
+    def isna(self, *args, **kwargs):
+        with self._history.pause():
+            ret_value = super(LuxSeries, self).isna(*args, **kwargs)
+
+        from lux.core.frame import LuxDataFrame
+        ret_value._parent_df = self
+        # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
+        # this is different from the part in describe, simply to faciliate the visualization.
+        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+
+        name = "Unnamed" if self.name is None else self.name
+        # manually set the data type to avoid mistakes like identifying the "Year" as temporal
+        # see set_data_type for a more detailed explanation why this works for the series
+        ret_value.set_data_type({name: "nominal"})
+        # add to history
+        self._log_events("isna", ret_value)
+        return ret_value
+
+    def isnull(self, *args, **kwargs):
+        with self._history.pause():
+            ret_value = super(LuxSeries, self).isnull(*args, **kwargs)
+
+        from lux.core.frame import LuxDataFrame
+        ret_value._parent_df = self
+        # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
+        # this is different from the part in describe, simply to faciliate the visualization.
+        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+
+        name = "Unnamed" if self.name is None else self.name
+        # manually set the data type to avoid mistakes like identifying the "Year" as temporal
+        # see set_data_type for a more detailed explanation why this works for the series
+        ret_value.set_data_type({name: "nominal"})
+        # add to history
+        self._log_events("isna", ret_value)
+        return ret_value
+
+
+    def notnull(self, *args, **kwargs):
+        with self._history.pause():
+            ret_value = super(LuxSeries, self).notnull(*args, **kwargs)
+
+        from lux.core.frame import LuxDataFrame
+        ret_value._parent_df = self
+        # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
+        # this is different from the part in describe, simply to faciliate the visualization.
+        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+
+        name = "Unnamed" if self.name is None else self.name
+        # manually set the data type to avoid mistakes like identifying the "Year" as temporal
+        # see set_data_type for a more detailed explanation why this works for the series
+        ret_value.set_data_type({name: "nominal"})
+
+        # add to history
+        self._log_events("notnull", ret_value)
+        return ret_value
+
+    def notna(self, *args, **kwargs):
+        with self._history.pause():
+            ret_value = super(LuxSeries, self).notna(*args, **kwargs)
+
+        from lux.core.frame import LuxDataFrame
+        ret_value._parent_df = self
+        # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
+        # this is different from the part in describe, simply to faciliate the visualization.
+        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+
+        name = "Unnamed" if self.name is None else self.name
+        # manually set the data type to avoid mistakes like identifying the "Year" as temporal
+        # see set_data_type for a more detailed explanation why this works for the series
+        ret_value.set_data_type({name: "nominal"})
+        
+        # add to history
+        self._log_events("notnull", ret_value)
+        return ret_value
+
+
 
     def unique(self, *args, **kwargs):
         """
@@ -336,9 +478,9 @@ class LuxSeries(pd.Series):
             ret_value = np.array(self.unique_values[self.name])
         else:
             ret_value = super(LuxSeries, self).unique(*args, **kwargs)
-        
-        self._history.append_event("unique", [self.name])
-        self.add_to_parent_history("unique", [self.name])
+        name = "Unnamed" if self.name is None else self.name
+        self._history.append_event("unique", [name])
+        self.add_to_parent_history("unique", [name])
 
         return ret_value
 

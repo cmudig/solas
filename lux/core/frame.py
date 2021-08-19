@@ -419,6 +419,8 @@ class LuxDataFrame(pd.DataFrame):
                 f"Please convert the {is_series} into a flat "
                 f"table via pandas.DataFrame.reset_index."
             )
+        elif is_series == "Series" and self.columns[0] == "Unnamed":
+            self._message.add(f"Lux sets by default the name of this unnamed {is_series} as \"Unnamed\" during visualization")
         else:
             id_fields_str = ""
             inverted_data_type = lux.config.executor.invert_data_type(self.data_type)
@@ -748,7 +750,6 @@ class LuxDataFrame(pd.DataFrame):
 
         # get single function vis
         from lux.action.implicit_tab import implicit_mre
-
         implicit_mre_rec, curr_hist_index = implicit_mre(self, self.selectedHistoryIndex)
         implicit_mre_JSON = LuxDataFrame.rec_to_JSON([implicit_mre_rec])
 
@@ -1070,6 +1071,7 @@ class LuxDataFrame(pd.DataFrame):
 
     def tail(self, n: int = 5):
         with self.history.pause():
+            # slice will be called inside it
             ret_frame = super(LuxDataFrame, self).tail(n)
 
         self._parent_df = self # why do we need to change the parent dataframe here?
@@ -1120,7 +1122,11 @@ class LuxDataFrame(pd.DataFrame):
             ret_value = super(LuxDataFrame, self).isna(*args, **kwargs)
         self.history.append_event("isna", [], rank_type="parent")
         ret_value.history.append_event("isna", [], rank_type="child")
-
+        # column of names like "year", "weak" will be identified by the lux as "temporal" 
+        # no matter what the actual data type is. 
+        # This will cause an error in visualization of this column
+        # therefore we provide overriding data type manually here. 
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
     def isnull(self, *args, **kwargs):
@@ -1128,6 +1134,11 @@ class LuxDataFrame(pd.DataFrame):
             ret_value = super(LuxDataFrame, self).isnull(*args, **kwargs)
         self.history.append_event("isna", [], rank_type="parent")
         # the isna call has already been logged because df.isna() is immediately called.
+        # in fact we do not need to override types here since the isna has already been called inside isnull
+        # we do this more due to the consideration of formalality
+        # the same rationale applies to the notnull and notna
+        # Besides we do not need to worry about the pd.isna since in this case, the df.isna is also finally called.
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
     def notnull(self, *args, **kwargs):
@@ -1137,6 +1148,7 @@ class LuxDataFrame(pd.DataFrame):
         ret_value.history.delete_at(-1) # isna gets added before
         ret_value.history.append_event("notnull", [], rank_type="child")
 
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
     
     def notna(self, *args, **kwargs):
@@ -1146,20 +1158,31 @@ class LuxDataFrame(pd.DataFrame):
         ret_value.history.delete_at(-1) # isna gets added before
         ret_value.history.append_event("notnull", [], rank_type="child")
 
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
-    def dropna(self, *args, **kwargs):
+    def dropna(self, axis=0, how='any', thresh=None, subset=None, inplace=False):
         with self.history.pause():
-            ret_value = super(LuxDataFrame, self).dropna(*args, **kwargs)
+            ret_value = super(LuxDataFrame, self).dropna(axis, how, thresh, subset, inplace)
 
-        self.history.append_event("dropna", [], rank_type="parent", child_df=ret_value, filt_key=None)
+        # subset = kwargs.get("subset", None)
+        # In this way, we may leave out one possible case when the user pass subset through *args style
+        # for example, df.dropna("rows", "all", 2, ["Origin"]) listing all parameters in order
+        # but given there are in total three parameters before the subset, 
+        # it seems this is a quite unusual choice
+        # But by specifying all possible parameters originally hidden in the *args and *kwargs,
+        # we could know exactly wha subset is. 
+        cols = subset if subset is not None else []
+        self.history.append_event("dropna", cols, rank_type="parent", child_df=ret_value, filt_key=None, filter_axis=axis)
         if ret_value is not None:  # i.e. inplace = True
-            ret_value.history.append_event("dropna", [], rank_type="child", child_df=None, filt_key=None)
+            ret_value.history.append_event("dropna", cols, rank_type="child", child_df=None, filt_key=None, filter_axis=axis)
 
         return ret_value
 
     def fillna(self, *args, **kwargs):
         affected_cols = []
+        # this might not the case when we pass a dict 
+        # which specify the filled value for some of the columns but not all possibly affected columns
         with self.history.pause():
             m = self.isna().any()
             affected_cols = list(m.index[m])

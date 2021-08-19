@@ -597,23 +597,29 @@ class PandasExecutor(Executor):
         ldf._length = len(ldf)
 
         for attribute in ldf.columns:
-
+            ldf_attr = ldf[attribute]
+            ldf_attr.history.freeze() 
+            # whenever and whereever a ldf[attribute] is called, their id is actually the same
+            # so when here ldf[attribute].unique, the unique event will be logged to this series
+            # and when the user created newdf = ldf[attribute], this event is being inherited
+            # to avoid this, we freeze the hisory of the Series here.
             if isinstance(attribute, pd._libs.tslibs.timestamps.Timestamp):
                 # If timestamp, make the dictionary keys the _repr_ (e.g., TimeStamp('2020-04-05 00.000')--> '2020-04-05')
                 attribute_repr = str(attribute._date_repr)
             else:
                 attribute_repr = attribute
 
-            ldf.unique_values[attribute_repr] = list(ldf[attribute].unique())
+            ldf.unique_values[attribute_repr] = list(ldf_attr.unique())
             ldf.cardinality[attribute_repr] = len(ldf.unique_values[attribute_repr])
 
             if pd.api.types.is_float_dtype(ldf.dtypes[attribute]) or pd.api.types.is_integer_dtype(
                 ldf.dtypes[attribute]
             ):
                 ldf._min_max[attribute_repr] = (
-                    ldf[attribute].min(),
-                    ldf[attribute].max(),
+                    ldf_attr.min(),
+                    ldf_attr.max(),
                 )
+            ldf_attr.history.unfreeze()
 
         if not pd.api.types.is_integer_dtype(ldf.index):
             index_column_name = ldf.index.name

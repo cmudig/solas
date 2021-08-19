@@ -3,6 +3,7 @@ from lux.vis.Vis import Vis
 from lux.vis.CustomVis import CustomVis
 from lux.history.event import Event
 from lux.core.frame import LuxDataFrame
+from lux.core.series import LuxSeries
 import lux.utils.defaults as lux_default
 
 from lux.implicit import cg_plotter
@@ -90,9 +91,12 @@ def process_value_counts(signal, ldf):
             which columns were used
     """
     try:
-        rank_type = signal.kwargs["rank_type"]
+        rank_type = signal.kwargs.get("rank_type", None)
+        # in the unique case, there is no parent but we still want the corresponding visualization.
         c_name = signal.cols[0]
-        if rank_type == "parent" and not ldf.pre_aggregated:
+        if ((rank_type == "parent") or rank_type is None) and not ldf.pre_aggregated:
+            # due to the most recent event is set to be non-parent, 
+            # this part of the conditional statement actually is never used.
             if ldf.data_type[c_name] == "quantitative":
                 clse = lux.Clause(attribute=c_name, mark_type="histogram")
             else:
@@ -151,19 +155,34 @@ def process_describe(signal, ldf):
         array: []
             Empty array of used cols so not excluded in other vis
     """
-    if (
-        ldf._parent_df is not None
-        and len(ldf) == 8
-        and all(ldf.index == ["count", "mean", "std", "min", "25%", "50%", "75%", "max"])
+    plot_df = None
+    if (ldf._parent_df is not None and (
+            (len(ldf) == 8 and all(ldf.index == ["count", "mean", "std", "min", "25%", "50%", "75%", "max"])) # the numeric case
+        or  (len(ldf) == 4 and all(ldf.index == ["count", "unique", "top", "freq"])) # the object case
+        or  (len(ldf) == 11 and all(ldf.index == ["count", "unique", "top", "freq", "mean", "std", "min", "25%", "50%", "75%", "max"])) # the mixed case
+        ) 
     ):
-        plot_df = ldf._parent_df
+        if isinstance(ldf._parent_df, LuxSeries):
+            name = "Unnamed" if ldf._parent_df.name is None else ldf._parent_df.name
+            plot_df = LuxDataFrame({name: ldf._parent_df})
+        else:
+            plot_df = ldf._parent_df
     else:
         plot_df = ldf
-
+    
     collection = []
-
-    for c in signal.cols:
-        v = Vis([lux.Clause(c, mark_type="boxplot")], plot_df)
+    data_types = dict(ldf.dtypes)
+    for col in signal.cols:
+        if data_types[col] == object:
+            # then it is string; 
+            # note here we choose to comply with the describe convention instead of lux.
+            # by drawing quantitative but nominal variables as boxplot.
+            v = Vis([lux.Clause(col, mark_type="bar")], plot_df)
+        elif ldf._data_type[col] == "temporal":
+            v = Vis([lux.Clause(col, mark_type="line")], plot_df)
+        else:
+            # it is then numeric so it is safe to draw boxplot.
+            v = Vis([lux.Clause(col, mark_type="boxplot")], plot_df)
         collection.append(v)
 
     vl = VisList(collection)
@@ -198,6 +217,7 @@ def process_filter(signal, ldf, ranked_cols, num_vis_cap=5):
     rank_type = signal.kwargs.get("rank_type", None)
     child_df = signal.kwargs.get("child_df", None)
     parent_mask = signal.kwargs.get("filt_key", None)
+    filter_axis = signal.kwargs.get("filter_axis", None)
 
     # assign parent and child
     p_df, c_df = None, None
@@ -211,30 +231,37 @@ def process_filter(signal, ldf, ranked_cols, num_vis_cap=5):
             p_df = ldf._parent_df
         c_df = ldf
 
-    # get mask
-    if parent_mask is not None:
-        mask = parent_mask
+    if filter_axis == 0 or filter_axis == "columns":
+        # we add this conditional statement to avoid drawing filter visualization for dropna(axis="columns")
+        return VisList([], ldf), []
     else:
-        mask, same_cols = compute_filter_diff(p_df, c_df)
+        # in the following, we assume that the filter is applied by rows instead of by columns
+        # in other words, only rows are dropped, so the columns of the parernt and the child should be the same
+        # get mask
+        if parent_mask is not None:
+            # this information is available only in the `_getitem_bool_array` case
+            mask = parent_mask
+        else:
+            mask, same_cols = compute_filter_diff(p_df, c_df)
 
-    # get cols with large dist change
-    vis_cols = get_col_recs(p_df, c_df)
+        # get cols with large dist change
+        vis_cols = get_col_recs(p_df, c_df)
 
-    # populate vis
-    all_used_cols = set()
-    chart_list = []
-    if rank_type == "child":
-        chart_list.append(plot_filter_count(p_df, mask))
+        # populate vis
+        all_used_cols = set()
+        chart_list = []
+        if rank_type == "child":
+            chart_list.append(plot_filter_count(p_df, mask))
 
-    if p_df is not None:
-        for c in vis_cols[:num_vis_cap]:
-            _v = plot_filter(p_df, [c], mask)
-            chart_list.append(_v)
-            all_used_cols.add(c)
+        if p_df is not None:
+            for c in vis_cols[:num_vis_cap]:
+                _v = plot_filter(p_df, [c], mask)
+                chart_list.append(_v)
+                all_used_cols.add(c)
 
-    vl = VisList(chart_list)
+        vl = VisList(chart_list)
 
-    return vl, list(all_used_cols)
+        return vl, list(all_used_cols)
 
 
 def get_col_recs(parent_df, child_df):
@@ -247,7 +274,8 @@ def get_col_recs(parent_df, child_df):
 
     # TODO store this on the df so dont have to recalc so much
     # TODO calc distance for 2d as well
-    for c in parent_df.columns:
+    valid_columns = set(parent_df.columns) & set(child_df.columns)
+    for c in valid_columns:
         p_data = parent_df[c].dropna().values
         c_data = child_df[c].dropna().values
 
