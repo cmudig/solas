@@ -144,36 +144,58 @@ def process_value_counts(signal, ldf):
 #####################
 def process_gb_describe(signal, ldf):
     plot_df = None
-    if (ldf._parent_df is not None
-        and isinstance(ldf._parent_df,  LuxGroupBy)
-        and isinstance(ldf._parent_df._parent_df, LuxDataFrame)
-    ):
-        plot_df = ldf._parent_df._parent_df
-        plot_df.history.freeze()
+    groupby_cols = None
+    if ldf._parent_df is not None and ldf._parent_df._parent_df is not None:
+        if isinstance(ldf._parent_df,  LuxGroupBy) and isinstance(ldf._parent_df._parent_df, LuxDataFrame):
+            # the first case corresponds to the following three cases:
+            # 1) df.groupby("Origin").describe()
+            # 2) df.groupby("Origin")[["Cylinders", "Weight"]].describe()
+            # 3) df.groupby("Origin")["Cylinders"].describe()
+            # in the first two cases, the resulting dataframe is multi-index, 
+            # while the third one needs to be specially treated
 
+
+            # the peculiar thing is that, in the third case, df.groupby("Origin")["Cylinders"].describe()
+            # the column reference event will be logged to df instead of df.groupby("Origin")
+            # and because we have not overriden the __getitem__ funciton of the LuxGroupby,
+            # the parent of df.groupby("Origin")["Cylinders"] is the same as the df.groupby("Origin"), that is, df
+            # This is why the third case will fall into this condition branch
+            plot_df = ldf._parent_df._parent_df
+            if isinstance(ldf.columns, pd.MultiIndex):
+                groupby_cols = list(ldf.columns.get_level_values(0).unique())
+            elif ldf._parent_df._parent_df.history.check_event(-1, op_name="col_ref"):
+                groupby_cols = ldf._parent_df._parent_df.history[-1].cols
+        elif (isinstance(ldf._parent_df, LuxDataFrame)
+            and isinstance(ldf._parent_df._parent_df, LuxGroupBy)
+            and ldf._parent_df.history.check_event(-1, op_name="col_ref")
+        ):
+            # the second corresponds to the following two cases:
+            # 1) df.groupby("Origin").describe()[["Cylinders", "Weight"]]
+            # 2) df.groupby("Origin").describe()["Cylinders"]
+            plot_df = ldf._parent_df._parent_df._parent_df
+            groupby_cols = ldf._parent_df.history[-1].cols
+        
+    if plot_df is not None and groupby_cols is not None:
+        plot_df.history.freeze()
         groupby_attr = ldf.index.name
+        
         plot_df.maintain_metadata()
         filter_vals = plot_df.unique_values[groupby_attr]
+        collection = []
+        data_types = dict(plot_df.dtypes)
+        for col in groupby_cols:
+            for attr_val in filter_vals:
+                if data_types[col] == object or plot_df._data_type[col] == "nominal":
+                    v = Vis([lux.Clause(col, mark_type="bar"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
+                elif plot_df._data_type[col] == "temporal":
+                    v = Vis([lux.Clause(col, mark_type="line"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
+                else:
+                    # it is then numeric so it is safe to draw boxplot.
+                    v = Vis([lux.Clause(col, mark_type="boxplot"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
+                collection.append(v)
 
-        if isinstance(ldf.columns, pd.MultiIndex):
-            groupby_cols = list(ldf.columns.get_level_values(0).unique())
-            collection = []
-            data_types = dict(plot_df.dtypes)
-            for col in groupby_cols:
-                for attr_val in filter_vals:
-                    if data_types[col] == object or plot_df._data_type[col] == "nominal":
-                        v = Vis([lux.Clause(col, mark_type="bar"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
-                    elif plot_df._data_type[col] == "temporal":
-                        v = Vis([lux.Clause(col, mark_type="line"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
-                    else:
-                        # it is then numeric so it is safe to draw boxplot.
-                        v = Vis([lux.Clause(col, mark_type="boxplot"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
-                    collection.append(v)
-
-            vl = VisList(collection)
-            return vl, []
-        else:
-            return VisList([]), []
+        vl = VisList(collection)
+        return vl, []
     else:
         return VisList([]), []
 
