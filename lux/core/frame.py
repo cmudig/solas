@@ -394,7 +394,7 @@ class LuxDataFrame(pd.DataFrame):
         # for example, df[["Origin", "Brand"]].describe() is of mixted types and satisfy all other conditions
         # the visualization of which will cause an error
         # on the other hand, if it is preaggregated, we will always create a vis in the maintain_recs()
-        if len(self.columns) > 1 and len(self.columns) < 4 and not self.pre_aggregated and self.intent == [] or self.intent is None:
+        if len(self.columns) > 1 and len(self.columns) < 4 and not self.pre_aggregated and (self.intent == [] or self.intent is None):
             vis = Vis(list(self.columns), self)
             if vis.mark != "":
                 vis._all_column = True
