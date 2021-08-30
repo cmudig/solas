@@ -451,7 +451,9 @@ class LuxDataFrame(pd.DataFrame):
 
             # TODO: Rewrite these as register action inside default actions
             # set_trace()
-            if self.pre_aggregated:
+            if self.pre_aggregated and self.columns.nlevels == 1:
+                # add the second condition to avoid the visualization of a multi-column object
+                # for example, df.groupby("Origin").describe()
                 if self.columns.name is not None:
                     self._append_rec(rec_infolist, row_group(self))
                 self._append_rec(rec_infolist, column_group(self))
