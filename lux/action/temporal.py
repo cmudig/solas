@@ -68,6 +68,7 @@ def temporal(ldf, **kwargs):
 
     col_order = ldf.history.get_implicit_intent(ldf.columns)
     vlist.sort(intent_cols=col_order)
+    vlist.filter(**kwargs)
     recommendation["collection"] = vlist
     return recommendation
 
