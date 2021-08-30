@@ -482,6 +482,7 @@ class LuxDataFrame(pd.DataFrame):
                     new_rec_infolist.append(rec_info)
 
             self._rec_info = new_rec_infolist
+            
             self.show_all_column_vis()
             self._widget = self.render_widget(child=child)
         # re-render widget for the current dataframe if previous rec is not recomputed
@@ -771,6 +772,22 @@ class LuxDataFrame(pd.DataFrame):
         else:
             implicit_mre_rec, curr_hist_index = implicit_mre(self, self.selectedHistoryIndex)
         implicit_mre_JSON = LuxDataFrame.rec_to_JSON([implicit_mre_rec])
+        # if len(implicit_mre_JSON) > 0:
+        #     print("implicit_mre_JSON")
+        #     for vis in implicit_mre_JSON[0]["vspec"]:
+        #         print("----------------------------------------------------")
+        #         if "layer" in vis:
+        #             for graph in vis["layer"]:
+        #                 print("--------------")
+        #                 print(graph.get("encoding", ""))
+        #                 print(graph.get("mark", ""))
+        #         elif ("encoding" in vis) and ("mark" in vis):
+        #             for channel in vis["encoding"]:
+        #                 print("************")
+        #                 print(channel)
+        #                 print(vis["encoding"][channel])
+        #             print("***%s***" % vis["mark"])
+
 
         return luxwidget.LuxWidget(
             currentVis=widgetJSON["current_vis"],
