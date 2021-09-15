@@ -21,7 +21,7 @@ from lux.interestingness.interestingness import interestingness
 from lux.utils import utils
 
 
-def temporal(ldf):
+def temporal(ldf, **kwargs):
     """
     Generates line charts for temporal fields at different granularities.
     Parameters
@@ -68,6 +68,7 @@ def temporal(ldf):
 
     col_order = ldf.history.get_implicit_intent(ldf.columns)
     vlist.sort(intent_cols=col_order)
+    vlist.filter(**kwargs)
     recommendation["collection"] = vlist
     return recommendation
 

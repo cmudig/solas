@@ -177,11 +177,40 @@ class LuxSeries(pd.Series):
         if self.name is None:
             self.name = "Unnamed"
 
-        ldf = LuxDataFrame(self)
+        child_df = None
+        ## explanation for the `not self.pre_aggregated` condition
+        # for series, if its parent is a dataframe, then it is very likely to come from a column reference of it
+        # In such cases, we intend to show the visualization of the parent dataframe, 
+        # and select charts that are related to the attribute of this series.
+        # The exception is that for df.std() etc function, the returned value satisfies other conditions
+        # Even if we could show the parent dataframe, the attribute is not available.
+        # and what the user want is actually the column group graph.
 
-        ldf._parent_df = (
-            self._parent_df
-        )  # tbd if this is good or bad, dont think I ever need the series itself
+        ## explanation for the `mre_op_name != "iloc" and mre_op_name != "loc"` condition
+        # in this case, the function call will be like newdf = df.loc[100:200,"Origin"] so that it will satisfy other conditions.
+        # it involves the filter, and including the charts for the parent dataframe (df in this case) will be confusing
+        # are charts about the dataframe before or after the visualization?
+        # therefore, we choose not to including the charts for the parent dataframe in this case
+        most_recent_event, hist_index = self.history.get_mre([self.name])
+        most_recent_op = most_recent_event.op_name if most_recent_event is not None else None
+        if (self._parent_df is not None and 
+                isinstance(self._parent_df, LuxDataFrame) and 
+                not self.pre_aggregated
+                and most_recent_op != "iloc"
+                and most_recent_op != "loc"
+            ):
+            ldf = self._parent_df
+            ldf._parent_df = None #se do we need information about the grandparent?
+            child_df = LuxDataFrame(self)
+            child_df._parent_df = self._parent_df
+            # this line is necessary otherwise because of the `_finalize_` logic, this self will be recognized as the parent_df
+            # which will cause a problem when we draw the implicit plotter like filter charts where the parent dataframe will be used
+            # (remember we use the child information to draw it)
+        else:
+            ldf = LuxDataFrame(self)
+            ldf._parent_df = (
+                self._parent_df
+            )  # tbd if this is good or bad, dont think I ever need the series itself
         self._ldf = ldf
 
         try:
@@ -193,7 +222,11 @@ class LuxSeries(pd.Series):
             # 2) Mixed type, often a result of a "row" acting as a series (df.iterrows, df.iloc[0])
             # Tolerant for NaNs + 1 type
             mixed_dtype = len(set([type(val) for val in self.values])) > 2
-            if ldf._pandas_only or is_dtype_series or mixed_dtype:
+            if ldf._pandas_only or is_dtype_series or (mixed_dtype and not ldf.pre_aggregated):
+                # if the series is pre-aggregated, then we allow the visualization even if the series consist of mixed types.
+                # for example, df["Origin"].describe().
+                # this also works in other cases since we have generally provided visualizations for the aggregated series
+                # in either column_group or implicit tab.
                 print(series_repr)
                 ldf._pandas_only = False
             else:
@@ -208,7 +241,7 @@ class LuxSeries(pd.Series):
 
 
                 # df_to_display.maintain_recs() # compute the recommendations (TODO: This can be rendered in another thread in the background to populate self._widget)
-                ldf.maintain_recs(is_series="Series")
+                ldf.maintain_recs(is_series="Series", child=child_df)
 
                 # Observers(callback_function, listen_to_this_variable)
                 ldf._widget.observe(ldf.remove_deleted_recs, names="deletedIndices")
@@ -381,7 +414,6 @@ class LuxSeries(pd.Series):
         # add to history
         self._log_events("describe", ret_value)
         return ret_value
-
 
     def isna(self, *args, **kwargs):
         with self._history.pause():

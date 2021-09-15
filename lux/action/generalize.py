@@ -19,7 +19,7 @@ from lux.utils import utils
 from lux.interestingness.interestingness import interestingness
 
 
-def generalize(ldf):
+def generalize(ldf, **kwargs):
     """
     Generates all possible visualizations when one attribute or filter from the current vis is removed.
 
@@ -95,5 +95,6 @@ def generalize(ldf):
     vlist.remove_duplicates()
     col_order = ldf.history.get_implicit_intent(ldf.columns)
     vlist.sort(remove_invalid=True, intent_cols=col_order)
+    vlist.filter(**kwargs)
     recommendation["collection"] = vlist
     return recommendation

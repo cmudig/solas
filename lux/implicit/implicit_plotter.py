@@ -1,9 +1,11 @@
+import pandas as pd
 from lux.vis.VisList import VisList
 from lux.vis.Vis import Vis
 from lux.vis.CustomVis import CustomVis
 from lux.history.event import Event
 from lux.core.frame import LuxDataFrame
 from lux.core.series import LuxSeries
+from lux.core.groupby import LuxGroupBy
 import lux.utils.defaults as lux_default
 
 from lux.implicit import cg_plotter
@@ -51,12 +53,15 @@ def generate_vis_from_signal(signal: Event, ldf: LuxDataFrame, ranked_cols=[]):
 
     elif signal.op_name == "describe":
         vis_list, used_cols = process_describe(signal, ldf)
-
+    elif signal.op_name == "gb_describe":
+        vis_list, used_cols = process_gb_describe(signal, ldf)
     elif (
         signal.op_name == "filter"
         or signal.op_name == "query"
         or signal.op_name == "slice"
         or signal.op_name == "gb_filter"
+        or signal.op_name == "loc"
+        or signal.op_name == "iloc"
     ):
 
         vis_list, used_cols = process_filter(signal, ldf, ranked_cols)
@@ -67,7 +72,7 @@ def generate_vis_from_signal(signal: Event, ldf: LuxDataFrame, ranked_cols=[]):
     elif signal.op_name == "isna" or signal.op_name == "notnull":
         vis_list, used_cols = process_null_plot(signal, ldf)
 
-    elif signal.cols:  # generic recs
+    elif signal.cols and not ldf.pre_aggregated:  # generic recs
         vis_list, used_cols = process_generic(signal, ldf)
 
     ldf.history.unfreeze()
@@ -137,6 +142,63 @@ def process_value_counts(signal, ldf):
 #####################
 # DESCRIBE plotting #
 #####################
+def process_gb_describe(signal, ldf):
+    plot_df = None
+    groupby_cols = None
+    if ldf._parent_df is not None and ldf._parent_df._parent_df is not None:
+        if isinstance(ldf._parent_df,  LuxGroupBy) and isinstance(ldf._parent_df._parent_df, LuxDataFrame):
+            # the first case corresponds to the following three cases:
+            # 1) df.groupby("Origin").describe()
+            # 2) df.groupby("Origin")[["Cylinders", "Weight"]].describe()
+            # 3) df.groupby("Origin")["Cylinders"].describe()
+            # in the first two cases, the resulting dataframe is multi-index, 
+            # while the third one needs to be specially treated
+
+
+            # the peculiar thing is that, in the third case, df.groupby("Origin")["Cylinders"].describe()
+            # the column reference event will be logged to df instead of df.groupby("Origin")
+            # and because we have not overriden the __getitem__ funciton of the LuxGroupby,
+            # the parent of df.groupby("Origin")["Cylinders"] is the same as the df.groupby("Origin"), that is, df
+            # This is why the third case will fall into this condition branch
+            plot_df = ldf._parent_df._parent_df
+            if isinstance(ldf.columns, pd.MultiIndex):
+                groupby_cols = list(ldf.columns.get_level_values(0).unique())
+            elif ldf._parent_df._parent_df.history.check_event(-1, op_name="col_ref"):
+                groupby_cols = ldf._parent_df._parent_df.history[-1].cols
+        elif (isinstance(ldf._parent_df, LuxDataFrame)
+            and isinstance(ldf._parent_df._parent_df, LuxGroupBy)
+            and ldf._parent_df.history.check_event(-1, op_name="col_ref")
+        ):
+            # the second corresponds to the following two cases:
+            # 1) df.groupby("Origin").describe()[["Cylinders", "Weight"]]
+            # 2) df.groupby("Origin").describe()["Cylinders"]
+            plot_df = ldf._parent_df._parent_df._parent_df
+            groupby_cols = ldf._parent_df.history[-1].cols
+        
+    if plot_df is not None and groupby_cols is not None:
+        plot_df.history.freeze()
+        groupby_attr = ldf.index.name
+        
+        plot_df.maintain_metadata()
+        filter_vals = plot_df.unique_values[groupby_attr]
+        collection = []
+        data_types = dict(plot_df.dtypes)
+        for col in groupby_cols:
+            for attr_val in filter_vals:
+                if data_types[col] == object or plot_df._data_type[col] == "nominal":
+                    v = Vis([lux.Clause(col, mark_type="bar"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
+                elif plot_df._data_type[col] == "temporal":
+                    v = Vis([lux.Clause(col, mark_type="line"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
+                else:
+                    # it is then numeric so it is safe to draw boxplot.
+                    v = Vis([lux.Clause(col, mark_type="boxplot"), lux.Clause(attribute=groupby_attr, value=attr_val)], plot_df)
+                collection.append(v)
+
+        vl = VisList(collection)
+        return vl, []
+    else:
+        return VisList([]), []
+
 def process_describe(signal, ldf):
     """
     Plots boxplots of either parent df if this is the describe df or of this df
@@ -325,14 +387,20 @@ def compute_filter_diff(old_df, filt_df):
         _t = filt_df
         filt_df = old_df
         old_df = _t
-
-    _d = old_df.merge(filt_df, indicator=True, how="left")
-    indicator = _d._merge == "both"  # .astype(int)
-
-    # which cols change? this isnt very informative since
-    # many columns change other than the filter.
-    same_cols = list(old_df.columns[old_df.nunique() == filt_df.nunique()])
-
+    # this only works when the parent and child dataframe share a set of columns
+    # while in the loc/iloc cases, it is possible that filters are applied to rows and columns together.
+    # therefore we would choose to merge according to their indices.
+    # Nevertheless, the current method is the safest and will always be our first choice if possible
+    if len(old_df.columns) == len(filt_df.columns):
+        _d = old_df.merge(filt_df, indicator=True, how="left")
+        indicator = _d._merge == "both"  # .astype(int)
+        # which cols change? this isnt very informative since
+        # many columns change other than the filter.
+        same_cols = list(old_df.columns[old_df.nunique() == filt_df.nunique()])
+    else:
+        _d = old_df.merge(filt_df, indicator=True, how="left", left_index=True, right_index=True)
+        indicator = _d._merge == "both"  # .astype(int)
+        same_cols = [column for column in old_df.columns if column not in filt_df.columns]
     return indicator, same_cols
 
 

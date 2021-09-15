@@ -390,13 +390,17 @@ class LuxDataFrame(pd.DataFrame):
             rec_infolist.append(recommendations)
 
     def show_all_column_vis(self):
-        if len(self.columns) > 1 and len(self.columns) < 4 and self.intent == [] or self.intent is None:
+        # for a small dataframe, it is very likely to be aggregated and therefore consist of mixed types in one column
+        # for example, df[["Origin", "Brand"]].describe() is of mixted types and satisfy all other conditions
+        # the visualization of which will cause an error
+        # on the other hand, if it is preaggregated, we will always create a vis in the maintain_recs()
+        if len(self.columns) > 1 and len(self.columns) < 4 and not self.pre_aggregated and (self.intent == [] or self.intent is None):
             vis = Vis(list(self.columns), self)
             if vis.mark != "":
                 vis._all_column = True
                 self.current_vis = VisList([vis])
 
-    def maintain_recs(self, is_series="DataFrame"):
+    def maintain_recs(self, is_series="DataFrame", child=None):
         self.history.freeze()
         # check to see if globally defined actions have been registered/removed
         if lux.config.update_actions["flag"] == True:
@@ -447,7 +451,9 @@ class LuxDataFrame(pd.DataFrame):
 
             # TODO: Rewrite these as register action inside default actions
             # set_trace()
-            if self.pre_aggregated:
+            if self.pre_aggregated and self.columns.nlevels == 1:
+                # add the second condition to avoid the visualization of a multi-column object
+                # for example, df.groupby("Origin").describe()
                 if self.columns.name is not None:
                     self._append_rec(rec_infolist, row_group(self))
                 self._append_rec(rec_infolist, column_group(self))
@@ -457,23 +463,30 @@ class LuxDataFrame(pd.DataFrame):
                 self.index.nlevels >= 2 or self.columns.nlevels >= 2
             ):
                 from lux.action.custom import custom_actions
-
+                filter_cols = child.columns.to_list() if child is not None else None
                 # generate vis from globally registered actions and append to dataframe
-                custom_action_collection = custom_actions(self)
+                custom_action_collection = custom_actions(self, filter_cols=filter_cols)
+                # filter_cols specify what attributes the returned vis must have as one of its channels
                 for rec in custom_action_collection:
                     self._append_rec(rec_infolist, rec)
                 lux.config.update_actions["flag"] = False
 
             # Store _rec_info into a more user-friendly dictionary form
             self._recommendation = {}
+            new_rec_infolist = []
+            # intend to remove actions that have no vis after filtering.
             for rec_info in rec_infolist:
                 action_type = rec_info["action"]
                 vlist = rec_info["collection"]
                 if len(vlist) > 0:
                     self._recommendation[action_type] = vlist
-            self._rec_info = rec_infolist
+                    rec_info["collection"] = vlist
+                    new_rec_infolist.append(rec_info)
+
+            self._rec_info = new_rec_infolist
+            
             self.show_all_column_vis()
-            self._widget = self.render_widget()
+            self._widget = self.render_widget(child=child)
         # re-render widget for the current dataframe if previous rec is not recomputed
         self._recs_fresh = True
         self.history.unfreeze()
@@ -704,7 +717,7 @@ class LuxDataFrame(pd.DataFrame):
     def display_pandas(self):
         return self.to_pandas()
 
-    def render_widget(self, renderer: str = "altair", input_current_vis=""):
+    def render_widget(self, renderer: str = "altair", input_current_vis="", child=None):
         """
         Generate a LuxWidget based on the LuxDataFrame
 
@@ -745,13 +758,38 @@ class LuxDataFrame(pd.DataFrame):
         check_import_lux_widget()
         import luxwidget  # widget code from other repo
 
-        hJSON = self.history.to_JSON()
+        # we still want to see the history of the child for the series visualization.
+        if child is not None:
+            hJSON = child.history.to_JSON() 
+        else:
+            hJSON = self.history.to_JSON() 
+        # it could be justified to use the parent history in the series case
         widgetJSON = self.to_JSON(input_current_vis=input_current_vis)
 
         # get single function vis
         from lux.action.implicit_tab import implicit_mre
-        implicit_mre_rec, curr_hist_index = implicit_mre(self, self.selectedHistoryIndex)
+        if child is not None:
+            # if we are visualizing a child dataframe/series, we sill want to use its history to draw implicit tabs
+            implicit_mre_rec, curr_hist_index = implicit_mre(child)
+        else:
+            implicit_mre_rec, curr_hist_index = implicit_mre(self, self.selectedHistoryIndex)
         implicit_mre_JSON = LuxDataFrame.rec_to_JSON([implicit_mre_rec])
+        # if len(implicit_mre_JSON) > 0:
+        #     print("implicit_mre_JSON")
+        #     for vis in implicit_mre_JSON[0]["vspec"]:
+        #         print("----------------------------------------------------")
+        #         if "layer" in vis:
+        #             for graph in vis["layer"]:
+        #                 print("--------------")
+        #                 print(graph.get("encoding", ""))
+        #                 print(graph.get("mark", ""))
+        #         elif ("encoding" in vis) and ("mark" in vis):
+        #             for channel in vis["encoding"]:
+        #                 print("************")
+        #                 print(channel)
+        #                 print(vis["encoding"][channel])
+        #             print("***%s***" % vis["mark"])
+
 
         return luxwidget.LuxWidget(
             currentVis=widgetJSON["current_vis"],

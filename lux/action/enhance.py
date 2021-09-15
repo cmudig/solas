@@ -20,7 +20,7 @@ from lux.vis.VisList import VisList
 from lux.vis.Vis import Vis
 
 
-def enhance(ldf):
+def enhance(ldf, **kwargs):
     """
     Given a set of vis, generates possible visualizations when an additional attribute is added to the current vis.
 
@@ -65,6 +65,7 @@ def enhance(ldf):
         vis.score = interestingness(vis, ldf)
 
     vlist.sort(intent_cols=implicit_col_list)
+    vlist.filter(**kwargs)
     vlist = vlist.showK()
 
     recommendation = {

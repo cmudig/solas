@@ -275,6 +275,20 @@ class VisList:
             k = abs(k)
             return VisList(self._collection[:k])
 
+    def filter(self, **kwargs):
+        """
+        Filter vis objects that have attributes as one of its channels. 
+        Use kwargs to accommodate more possible filter strategies later.
+
+        Parameters
+        ----------
+        filter_cols
+                attributes we are intereted in
+        """
+        filter_cols = kwargs.get("filter_cols", None)
+        if filter_cols is not None:
+            self._collection = [vis for vis in self._collection if any([len(vis.get_attr_by_attr_name(attr)) > 0 for attr in filter_cols])]
+
     def normalize_score(self, invert_order=False):
         try:
             max_score = max(list(self.get("score")))

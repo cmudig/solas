@@ -18,7 +18,7 @@ import lux
 from lux.utils import utils
 
 
-def univariate(ldf, *args):
+def univariate(ldf, *args, **kwargs):
     """
     Generates bar chart distributions of different attributes in the dataframe.
 
@@ -98,5 +98,6 @@ def univariate(ldf, *args):
 
     col_order = ldf.history.get_implicit_intent(ldf.columns)
     vlist.sort(intent_cols=col_order)
+    vlist.filter(**kwargs)
     recommendation["collection"] = vlist
     return recommendation
