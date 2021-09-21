@@ -19,6 +19,9 @@ from lux.utils import utils
 from lux.vis.VisList import VisList
 from lux.vis.Vis import Vis
 
+from IPython.core.debugger import set_trace
+
+
 
 def enhance(ldf, **kwargs):
     """
@@ -58,15 +61,24 @@ def enhance(ldf, **kwargs):
     elif implicit_col_list:
         intended_attrs = f'<p class="highlight-intent">{implicit_col_list[0]}</p>'
         intent = [implicit_col_list[0], "?"]
+    
+    set_trace()
 
-    vlist = VisList(intent, ldf)
 
-    for vis in vlist:
-        vis.score = interestingness(vis, ldf)
+    # 9/20/21 - was getting a "pandas.core.base.DataError: No numeric types to aggregate" error when calling VisList so wrapped this in try
+    try:
+        vlist = VisList(intent, ldf)
 
-    vlist.sort(intent_cols=implicit_col_list)
-    vlist.filter(**kwargs)
-    vlist = vlist.showK()
+        for vis in vlist:
+            vis.score = interestingness(vis, ldf)
+
+        vlist.sort(intent_cols=implicit_col_list)
+        vlist.filter(**kwargs)
+        vlist = vlist.showK()
+    except Exception as e:
+        print("Error: ", e)
+        vlist = VisList([], ldf)
+
 
     recommendation = {
         "action": "Enhance",

@@ -19,7 +19,7 @@ from lux.executor.SQLExecutor import SQLExecutor
 import lux
 
 
-def custom(ldf):
+def custom(ldf, **kwargs):
     """
     Generates user-defined vis based on the intent.
 
