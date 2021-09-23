@@ -500,7 +500,7 @@ def plot_filter(ldf, cols, mask, card_thresh=PLOT_CARD_THRESH, filt_frac_thresh=
             .encode(
                 x=alt_x_enc,
                 y=f"count({x_var}):Q",
-                color=alt.Color("filt_mask", scale=tf_scale, title="Is Filtered?"),
+                color=alt.Color("filt_mask", scale=tf_scale, title="Is Filtered?", legend=None),
             )
         )
 

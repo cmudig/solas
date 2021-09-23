@@ -62,8 +62,6 @@ def enhance(ldf, **kwargs):
         intended_attrs = f'<p class="highlight-intent">{implicit_col_list[0]}</p>'
         intent = [implicit_col_list[0], "?"]
     
-    set_trace()
-
 
     # 9/20/21 - was getting a "pandas.core.base.DataError: No numeric types to aggregate" error when calling VisList so wrapped this in try
     try:
@@ -75,8 +73,8 @@ def enhance(ldf, **kwargs):
         vlist.sort(intent_cols=implicit_col_list)
         vlist.filter(**kwargs)
         vlist = vlist.showK()
-    except Exception as e:
-        print("Error: ", e)
+    except Exception:
+        # print("Error: ", e)
         vlist = VisList([], ldf)
 
 

@@ -77,7 +77,7 @@ def column_group(ldf):
                 vlst = VisList([v], ldf_flat)
 
         # df.groupby.mean() case
-        elif isinstance(ldf._parent_df, lux.core.groupby.LuxGroupBy) and all(
+        elif isinstance(ldf._parent_df, lux.core.groupby.LuxGroupBy) and len(f_map) and all(
             [j == "mean" for j in f_map.values()]
         ):
             try:
