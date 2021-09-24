@@ -76,7 +76,7 @@ class LuxSeries(pd.Series):
         self._message = Message()
 
         # others
-        self._data_type = None
+        self._data_type = {}
         self.unique_values = None
         self.cardinality = None
         self._rec_info = None
@@ -113,6 +113,10 @@ class LuxSeries(pd.Series):
     @property
     def history(self):
         return self._history
+
+    @property
+    def data_type(self):
+        return self._data_type
 
     @history.setter
     def history(self, history: History):
@@ -155,11 +159,15 @@ class LuxSeries(pd.Series):
         else:
             self._type_override = {**self._type_override, **types}
 
+        if not self.data_type:
+            self._data_type = {}
+
         for attr in types:
             if types[attr] not in ["nominal", "quantitative", "id", "temporal"]:
                 raise ValueError(
                     f'Invalid data type option specified for {attr}. Please use one of the following supported types: ["nominal", "quantitative", "id", "temporal"]'
                 )
+            self._data_type[attr] = types[attr]
 
     def _ipython_display_(self):
         from IPython.display import display
@@ -170,17 +178,13 @@ class LuxSeries(pd.Series):
         series_repr = super(LuxSeries, self).__repr__()
 
         # Default column name 0 causes errors
-        # Have a meaningful name so that the user could recognize it 
-        # when we present recommendation for this series 
-        # Also becaus when log the event we use the "Unnamed" as the column name
-        # if the name of the series is unavailable
         if self.name is None:
             self.name = "Unnamed"
 
         child_df = None
         ## explanation for the `not self.pre_aggregated` condition
         # for series, if its parent is a dataframe, then it is very likely to come from a column reference of it
-        # In such cases, we intend to show the visualization of the parent dataframe, 
+        # In such cases, we intend to show the visualization of the parent dataframe,
         # and select charts that are related to the attribute of this series.
         # The exception is that for df.std() etc function, the returned value satisfies other conditions
         # Even if we could show the parent dataframe, the attribute is not available.
@@ -193,14 +197,15 @@ class LuxSeries(pd.Series):
         # therefore, we choose not to including the charts for the parent dataframe in this case
         most_recent_event, hist_index = self.history.get_mre([self.name])
         most_recent_op = most_recent_event.op_name if most_recent_event is not None else None
-        if (self._parent_df is not None and 
-                isinstance(self._parent_df, LuxDataFrame) and 
-                not self.pre_aggregated
-                and most_recent_op != "iloc"
-                and most_recent_op != "loc"
-            ):
+        if (
+            self._parent_df is not None
+            and isinstance(self._parent_df, LuxDataFrame)
+            and not self.pre_aggregated
+            and most_recent_op != "iloc"
+            and most_recent_op != "loc"
+        ):
             ldf = self._parent_df
-            ldf._parent_df = None #se do we need information about the grandparent?
+            ldf._parent_df = None  # se do we need information about the grandparent?
             child_df = LuxDataFrame(self)
             child_df._parent_df = self._parent_df
             # this line is necessary otherwise because of the `_finalize_` logic, this self will be recognized as the parent_df
@@ -237,8 +242,6 @@ class LuxSeries(pd.Series):
                     self._toggle_pandas_display = False
                 else:
                     self._toggle_pandas_display = True
-
-
 
                 # df_to_display.maintain_recs() # compute the recommendations (TODO: This can be rendered in another thread in the background to populate self._widget)
                 ldf.maintain_recs(is_series="Series", child=child_df)
@@ -368,28 +371,29 @@ class LuxSeries(pd.Series):
     The fix is to catch this the first time a column is pulled into the cache and either clear the history or 
     something else
     """
+
     def _log_events(self, op_name, ret_value):
-        # add to history 
+        # add to history
         name = "Unnamed" if self.name is None else self.name
-        self._history.append_event(op_name, [name]) # df.col
+        self._history.append_event(op_name, [name])  # df.col
         if ret_value.history.check_event(-1, op_name="col_ref", cols=[name]):
             ret_value.history.edit_event(-1, op_name, [name], rank_type="child")
-        else: 
+        else:
             ret_value.history.append_event(op_name, [name], rank_type="child")
         ## otherwise, there are two logs, one for col_ref, the othere for value_counts
         ## because it directly copies the history of the parent dataframe
-        self.add_to_parent_history(op_name, [name]) # df
+        self.add_to_parent_history(op_name, [name])  # df
 
     def value_counts(self, *args, **kwargs):
         ret_value = super(LuxSeries, self).value_counts(*args, **kwargs)
 
-        ret_value._parent_df = self 
+        ret_value._parent_df = self
         # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
-        ret_value._history = self._history.copy() # self._parent_df._history.copy()
+        ret_value._history = self._history.copy()  # self._parent_df._history.copy()
         # is there a need to copy from the history of the grandparent?
         ret_value.pre_aggregated = True
 
-        # add to history 
+        # add to history
         self._log_events("value_counts", ret_value)
         return ret_value
 
@@ -402,13 +406,16 @@ class LuxSeries(pd.Series):
                 self._parent_df.history.unfreeze()
 
         from lux.core.frame import LuxDataFrame
+
         name = "Unnamed" if self.name is None else self.name
-        ret_value._parent_df = LuxDataFrame({name: self}) 
+        ret_value._parent_df = LuxDataFrame({name: self})
         # this is different from the part in value_counts, simply to faciliate the visualization.
         # sinc in the boxplot, only this serires is needed.
         # it is ok to set ret_value._parent_df = self._parent_df but it will include other columns as well
         # and this approach could not handle the case when the self._parent_df is not avaiable.
-        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+        ret_value._history = (
+            self._history.copy()
+        )  # seems no need to inherit the history of the grandparent.
         ret_value.pre_aggregated = True
 
         # add to history
@@ -420,15 +427,18 @@ class LuxSeries(pd.Series):
             ret_value = super(LuxSeries, self).isna(*args, **kwargs)
 
         from lux.core.frame import LuxDataFrame
+
         ret_value._parent_df = self
         # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
         # this is different from the part in describe, simply to faciliate the visualization.
-        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+        ret_value._history = (
+            self._history.copy()
+        )  # seems no need to inherit the history of the grandparent.
 
         name = "Unnamed" if self.name is None else self.name
         # manually set the data type to avoid mistakes like identifying the "Year" as temporal
         # see set_data_type for a more detailed explanation why this works for the series
-        ret_value.set_data_type({name: "nominal"})
+        # ret_value.set_data_type({name: "nominal"})
         # add to history
         self._log_events("isna", ret_value)
         return ret_value
@@ -438,34 +448,39 @@ class LuxSeries(pd.Series):
             ret_value = super(LuxSeries, self).isnull(*args, **kwargs)
 
         from lux.core.frame import LuxDataFrame
+
         ret_value._parent_df = self
         # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
         # this is different from the part in describe, simply to faciliate the visualization.
-        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+        ret_value._history = (
+            self._history.copy()
+        )  # seems no need to inherit the history of the grandparent.
 
         name = "Unnamed" if self.name is None else self.name
         # manually set the data type to avoid mistakes like identifying the "Year" as temporal
         # see set_data_type for a more detailed explanation why this works for the series
-        ret_value.set_data_type({name: "nominal"})
+        # ret_value.set_data_type({name: "nominal"})
         # add to history
         self._log_events("isna", ret_value)
         return ret_value
-
 
     def notnull(self, *args, **kwargs):
         with self._history.pause():
             ret_value = super(LuxSeries, self).notnull(*args, **kwargs)
 
         from lux.core.frame import LuxDataFrame
+
         ret_value._parent_df = self
         # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
         # this is different from the part in describe, simply to faciliate the visualization.
-        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+        ret_value._history = (
+            self._history.copy()
+        )  # seems no need to inherit the history of the grandparent.
 
         name = "Unnamed" if self.name is None else self.name
         # manually set the data type to avoid mistakes like identifying the "Year" as temporal
         # see set_data_type for a more detailed explanation why this works for the series
-        ret_value.set_data_type({name: "nominal"})
+        # ret_value.set_data_type({name: "nominal"})
 
         # add to history
         self._log_events("notnull", ret_value)
@@ -476,21 +491,22 @@ class LuxSeries(pd.Series):
             ret_value = super(LuxSeries, self).notna(*args, **kwargs)
 
         from lux.core.frame import LuxDataFrame
+
         ret_value._parent_df = self
         # no need to use LuxDataFrame({name: self}) since the _parent_df won't be used in plotting implicit_tab
         # this is different from the part in describe, simply to faciliate the visualization.
-        ret_value._history = self._history.copy() # seems no need to inherit the history of the grandparent.
+        ret_value._history = (
+            self._history.copy()
+        )  # seems no need to inherit the history of the grandparent.
 
         name = "Unnamed" if self.name is None else self.name
         # manually set the data type to avoid mistakes like identifying the "Year" as temporal
         # see set_data_type for a more detailed explanation why this works for the series
-        ret_value.set_data_type({name: "nominal"})
-        
+        # ret_value.set_data_type({name: "nominal"})
+
         # add to history
         self._log_events("notnull", ret_value)
         return ret_value
-
-
 
     def unique(self, *args, **kwargs):
         """
@@ -532,3 +548,168 @@ class LuxSeries(pd.Series):
                 self._parent_df.history.edit_event(-1, op, cols, rank_type="parent")
             else:
                 self._parent_df._history.append_event(op, cols, rank_type="parent")
+
+    ##################
+    # Type overrides #
+    ##################
+
+    def _infer_type(self, type):
+        """
+        update data type here and on parent
+        type is in [ordinal, nominal, interval, ratio] and is converted to lux types
+        Only update if a MORE selective type where nominal < ordinal < interval < ratio
+
+        See: https://en.wikipedia.org/wiki/Level_of_measurement
+        """
+        name = "Unnamed" if self.name is None else self.name
+
+        # print(f"Inferring type of {type} on {self.name}")
+
+        # turn into broad lux categories, avoid if the series is an object because is likely a string or is temporal
+        if (
+            (type == "interval" or type == "ratio" or type == "quantitative")
+            and self.dtype != "object"
+            and not pd.api.types.is_datetime64_ns_dtype(self.dtype)
+        ):
+            type = "quantitative"
+
+            self.set_data_type({name: type})
+
+            if self._parent_df is not None and self.name is not None:
+                self._parent_df.set_data_type({self.name: type})
+
+    # -------------------------------------------------------------
+    # Comparisons
+
+    def __eq__(self, other):
+        # ==, nominal
+        self._infer_type("nominal")
+        return super(LuxSeries, self).__eq__(other)
+
+    def __ne__(self, other):
+        # !=, nominal
+        self._infer_type("nominal")
+        return super(LuxSeries, self).__ne__(other)
+
+    def __lt__(self, other):
+        # <, ordinal
+        self._infer_type("ordinal")
+        return super(LuxSeries, self).__lt__(other)
+
+    def __le__(self, other):
+        # <=, ordinal
+        self._infer_type("ordinal")
+        return super(LuxSeries, self).__le__(other)
+
+    def __gt__(self, other):
+        # >, ordinal
+        self._infer_type("ordinal")
+        return super(LuxSeries, self).__gt__(other)
+
+    def __ge__(self, other):
+        # >=, ordinal
+        self._infer_type("ordinal")
+        return super(LuxSeries, self).__ge__(other)
+
+    # -------------------------------------------------------------
+    # Logical Methods
+
+    # def __and__(self, other):
+    #     return self._logical_method(other, operator.and_)
+
+    # def __rand__(self, other):
+    #     return self._logical_method(other, roperator.rand_)
+
+    # def __or__(self, other):
+    #     return self._logical_method(other, operator.or_)
+
+    # def __ror__(self, other):
+    #     return self._logical_method(other, roperator.ror_)
+
+    # def __xor__(self, other):
+    #     return self._logical_method(other, operator.xor)
+
+    # def __rxor__(self, other):
+    #     return self._logical_method(other, roperator.rxor)
+
+    # -------------------------------------------------------------
+    # Arithmetic Methods
+    def __add__(self, other):
+        # interval, quantitative
+        self._infer_type("interval")
+        return super(LuxSeries, self).__add__(other)
+
+    def __radd__(self, other):
+        # interval, quantitative
+        self._infer_type("interval")
+        return super(LuxSeries, self).__radd__(other)
+
+    def __sub__(self, other):
+        # interval, quantitative
+        self._infer_type("interval")
+        return super(LuxSeries, self).__sub__(other)
+
+    def __rsub__(self, other):
+        # interval, quantitative
+        self._infer_type("interval")
+        return super(LuxSeries, self).__rsub__(other)
+
+    def __mul__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__mul__(other)
+
+    def __rmul__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__rmul__(other)
+
+    def __truediv__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__truediv__(other)
+
+    def __rtruediv__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__rtruediv__(other)
+
+    def __floordiv__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__floordiv__(other)
+
+    def __rfloordiv__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__rfloordiv__(other)
+
+    def __mod__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__mod__(other)
+
+    def __rmod__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__rmod__(other)
+
+    def __divmod__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__divmod__(other)
+
+    def __rdivmod__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__rdivmod__(other)
+
+    def __pow__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__pow__(other)
+
+    def __rpow__(self, other):
+        # ratio, quantitative
+        self._infer_type("ratio")
+        return super(LuxSeries, self).__rpow__(other)
