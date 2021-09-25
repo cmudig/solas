@@ -73,7 +73,7 @@ class LuxDataFrame(pd.DataFrame):
         self._saved_export = None
         self._current_vis = []
         self._widget = None
-        self._prev = None 
+        self._prev = None
         # although it is no longer used, it is required to be tested in the unit test
         super(LuxDataFrame, self).__init__(*args, **kw)
 
@@ -394,7 +394,12 @@ class LuxDataFrame(pd.DataFrame):
         # for example, df[["Origin", "Brand"]].describe() is of mixted types and satisfy all other conditions
         # the visualization of which will cause an error
         # on the other hand, if it is preaggregated, we will always create a vis in the maintain_recs()
-        if len(self.columns) > 1 and len(self.columns) < 4 and not self.pre_aggregated and (self.intent == [] or self.intent is None):
+        if (
+            len(self.columns) > 1
+            and len(self.columns) < 4
+            and not self.pre_aggregated
+            and (self.intent == [] or self.intent is None)
+        ):
             vis = Vis(list(self.columns), self)
             if vis.mark != "":
                 vis._all_column = True
@@ -424,7 +429,9 @@ class LuxDataFrame(pd.DataFrame):
                 f"table via pandas.DataFrame.reset_index."
             )
         elif is_series == "Series" and self.columns[0] == "Unnamed":
-            self._message.add(f"Lux sets by default the name of this unnamed {is_series} as \"Unnamed\" during visualization")
+            self._message.add(
+                f'Lux sets by default the name of this unnamed {is_series} as "Unnamed" during visualization'
+            )
         else:
             id_fields_str = ""
             inverted_data_type = lux.config.executor.invert_data_type(self.data_type)
@@ -463,6 +470,7 @@ class LuxDataFrame(pd.DataFrame):
                 self.index.nlevels >= 2 or self.columns.nlevels >= 2
             ):
                 from lux.action.custom import custom_actions
+
                 filter_cols = child.columns.to_list() if child is not None else None
                 # generate vis from globally registered actions and append to dataframe
                 custom_action_collection = custom_actions(self, filter_cols=filter_cols)
@@ -484,7 +492,7 @@ class LuxDataFrame(pd.DataFrame):
                     new_rec_infolist.append(rec_info)
 
             self._rec_info = new_rec_infolist
-            
+
             self.show_all_column_vis()
             self._widget = self.render_widget(child=child)
         # re-render widget for the current dataframe if previous rec is not recomputed
@@ -760,14 +768,15 @@ class LuxDataFrame(pd.DataFrame):
 
         # we still want to see the history of the child for the series visualization.
         if child is not None:
-            hJSON = child.history.to_JSON() 
+            hJSON = child.history.to_JSON()
         else:
-            hJSON = self.history.to_JSON() 
+            hJSON = self.history.to_JSON()
         # it could be justified to use the parent history in the series case
         widgetJSON = self.to_JSON(input_current_vis=input_current_vis)
 
         # get single function vis
         from lux.action.implicit_tab import implicit_mre
+
         if child is not None:
             # if we are visualizing a child dataframe/series, we sill want to use its history to draw implicit tabs
             implicit_mre_rec, curr_hist_index = implicit_mre(child)
@@ -789,7 +798,6 @@ class LuxDataFrame(pd.DataFrame):
         #                 print(channel)
         #                 print(vis["encoding"][channel])
         #             print("***%s***" % vis["mark"])
-
 
         return luxwidget.LuxWidget(
             currentVis=widgetJSON["current_vis"],
@@ -1071,35 +1079,35 @@ class LuxDataFrame(pd.DataFrame):
         return ret_value
 
     def __repr__(self) -> str:
-        '''
+        """
         Called after print(df).
-        '''
+        """
         with self.history.pause():
-            # inside __repr__, iloc function will be called at least for each column one by one. 
+            # inside __repr__, iloc function will be called at least for each column one by one.
             # which will then log each column in the dataframe history but provide no much information
             ret_str = super(LuxDataFrame, self).__repr__()
         return ret_str
 
     def _repr_html_(self) -> str:
-        '''
+        """
         Called after df._repr_html_.
-        '''
+        """
         with self.history.pause():
-            # inside _repr_html_, iloc function will be called at least for each column one by one. 
+            # inside _repr_html_, iloc function will be called at least for each column one by one.
             # which will then log each column in the dataframe history but provide no much information
             ret_str = super(LuxDataFrame, self)._repr_html_()
         return ret_str
 
-    # History logging functions 
+    # History logging functions
     def head(self, n: int = 5):
         with self.history.pause():
             # inside the head function, iloc[:n] will be called
             # so pause the history to avoid the logging of iloc
             ret_frame = super(LuxDataFrame, self).head(n)
-        self._parent_df = self # why do we need to change the parent dataframe here?
-        ret_frame.history = self.history.copy() 
-        # some other functions will be called unnecessarily, for example, _slice and iloc. 
-        # copy the history of the parent dataframe to avoid log these functions. 
+        self._parent_df = self  # why do we need to change the parent dataframe here?
+        ret_frame.history = self.history.copy()
+        # some other functions will be called unnecessarily, for example, _slice and iloc.
+        # copy the history of the parent dataframe to avoid log these functions.
         # not sure about whether the child dataframe should copy the history of the parent.
 
         # save history on self and returned df
@@ -1112,9 +1120,9 @@ class LuxDataFrame(pd.DataFrame):
             # slice will be called inside it
             ret_frame = super(LuxDataFrame, self).tail(n)
 
-        self._parent_df = self # why do we need to change the parent dataframe here?
-        ret_frame.history = self.history.copy() 
-      
+        self._parent_df = self  # why do we need to change the parent dataframe here?
+        ret_frame.history = self.history.copy()
+
         # save history on self and returned df
         self.history.append_event("tail", [], n)
         ret_frame.history.append_event("tail", [], n)
@@ -1125,7 +1133,7 @@ class LuxDataFrame(pd.DataFrame):
         with self.history.pause():
             ret_value = super(LuxDataFrame, self).info(*args, **kwargs)
         self.history.append_event("info", [], *args, **kwargs)
-        return ret_value # returns None
+        return ret_value  # returns None
 
     def describe(self, *args, **kwargs):
         with self.history.pause():  # calls unique internally
@@ -1147,7 +1155,7 @@ class LuxDataFrame(pd.DataFrame):
             # inside query, loc function will be called
             ret_value = super(LuxDataFrame, self).query(expr, inplace, **kwargs)
 
-        if ret_value is not None: # i.e. inplace = True
+        if ret_value is not None:  # i.e. inplace = True
             ret_value._parent_df = self
             ret_value.history = self.history.copy()
             ret_value.history.append_event("query", [], rank_type="child", child_df=None, filt_key=None)
@@ -1160,10 +1168,10 @@ class LuxDataFrame(pd.DataFrame):
             ret_value = super(LuxDataFrame, self).isna(*args, **kwargs)
         self.history.append_event("isna", [], rank_type="parent")
         ret_value.history.append_event("isna", [], rank_type="child")
-        # column of names like "year", "weak" will be identified by the lux as "temporal" 
-        # no matter what the actual data type is. 
+        # column of names like "year", "weak" will be identified by the lux as "temporal"
+        # no matter what the actual data type is.
         # This will cause an error in visualization of this column
-        # therefore we provide overriding data type manually here. 
+        # therefore we provide overriding data type manually here.
         # ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
@@ -1183,43 +1191,47 @@ class LuxDataFrame(pd.DataFrame):
         with self.history.pause():
             ret_value = super(LuxDataFrame, self).notnull(*args, **kwargs)
         self.history.append_event("notnull", [], rank_type="parent")
-        ret_value.history.delete_at(-1) # isna gets added before
+        ret_value.history.delete_at(-1)  # isna gets added before
         ret_value.history.append_event("notnull", [], rank_type="child")
 
         # ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
-    
+
     def notna(self, *args, **kwargs):
         with self.history.pause():
             ret_value = super(LuxDataFrame, self).notna(*args, **kwargs)
         self.history.append_event("notnull", [], rank_type="parent")
-        ret_value.history.delete_at(-1) # isna gets added before
+        ret_value.history.delete_at(-1)  # isna gets added before
         ret_value.history.append_event("notnull", [], rank_type="child")
 
         # ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
-    def dropna(self, axis=0, how='any', thresh=None, subset=None, inplace=False):
+    def dropna(self, axis=0, how="any", thresh=None, subset=None, inplace=False):
         with self.history.pause():
             ret_value = super(LuxDataFrame, self).dropna(axis, how, thresh, subset, inplace)
 
         # subset = kwargs.get("subset", None)
         # In this way, we may leave out one possible case when the user pass subset through *args style
         # for example, df.dropna("rows", "all", 2, ["Origin"]) listing all parameters in order
-        # but given there are in total three parameters before the subset, 
+        # but given there are in total three parameters before the subset,
         # it seems this is a quite unusual choice
         # But by specifying all possible parameters originally hidden in the *args and *kwargs,
-        # we could know exactly wha subset is. 
+        # we could know exactly wha subset is.
         cols = subset if subset is not None else []
-        self.history.append_event("dropna", cols, rank_type="parent", child_df=ret_value, filt_key=None, filter_axis=axis)
+        self.history.append_event(
+            "dropna", cols, rank_type="parent", child_df=ret_value, filt_key=None, filter_axis=axis
+        )
         if ret_value is not None:  # i.e. inplace = True
-            ret_value.history.append_event("dropna", cols, rank_type="child", child_df=None, filt_key=None, filter_axis=axis)
+            ret_value.history.append_event(
+                "dropna", cols, rank_type="child", child_df=None, filt_key=None, filter_axis=axis
+            )
 
         return ret_value
 
     def fillna(self, *args, **kwargs):
         affected_cols = []
-        # this might not the case when we pass a dict 
+        # this might not the case when we pass a dict
         # which specify the filled value for some of the columns but not all possibly affected columns
         with self.history.pause():
             m = self.isna().any()
@@ -1228,7 +1240,7 @@ class LuxDataFrame(pd.DataFrame):
         ret_value = super(LuxDataFrame, self).fillna(*args, **kwargs)
         if affected_cols:
             # only log the function call if the number of affected columns is greater than 0
-            if ret_value is not None:# i.e. inplace = True
+            if ret_value is not None:  # i.e. inplace = True
                 ret_value.history.append_event("fillna", affected_cols, rank_type="child")
             self.history.append_event("fillna", affected_cols, rank_type="parent")
         return ret_value
@@ -1245,7 +1257,7 @@ class LuxDataFrame(pd.DataFrame):
             ret_value.history.append_event("slice", [], rank_type="child", child_df=None, filt_key=None)
 
         return ret_value
-    
+
     @property
     def loc(self, *args, **kwargs):  # -> _LocIndexer from pd.core.indexing._LocIndexer
         locIndexer_obj = super(LuxDataFrame, self).loc(*args, **kwargs)
@@ -1258,7 +1270,7 @@ class LuxDataFrame(pd.DataFrame):
         iLocIndexer_obj._parent_df = self
         return iLocIndexer_obj
 
-    def groupby(self, *args, **kwargs):
+    def groupby(self, by=None, *args, **kwargs):
         history_flag = False
         if "history" not in kwargs or ("history" in kwargs and kwargs["history"]):
             history_flag = True
@@ -1266,9 +1278,12 @@ class LuxDataFrame(pd.DataFrame):
             del kwargs["history"]
         if self.history is not None:
             self.history.freeze()
-        groupby_obj = super(LuxDataFrame, self).groupby(*args, **kwargs)
+        groupby_obj = super(LuxDataFrame, self).groupby(by, *args, **kwargs)
         if self.history is not None:
             self.history.unfreeze()
+        # set types
+        self._handle_type_infer_ambiguous(by, "nominal")
+
         for attr in self._metadata:
             groupby_obj.__dict__[attr] = getattr(self, attr, None)
         if history_flag:
@@ -1279,6 +1294,39 @@ class LuxDataFrame(pd.DataFrame):
         groupby_obj._parent_df = self
         return groupby_obj
 
+    def _handle_type_infer_ambiguous(self, key, type):
+        """
+        Helper function for inferring type on a single column or list of columns
+        """
+        if key is not None:
+            if is_hashable(key) and key in self.columns:
+                self._infer_type(key, type)
+            elif is_list_like(key):
+                for item in key:
+                    if is_hashable(item) and item in self.columns:
+                        self._infer_type(item, type)
+
+    def _infer_type(self, col, type):
+        """
+        update data type here and on parent
+        type is in [ordinal, nominal, interval, ratio] and is converted to lux types
+        Only update if a MORE selective type where nominal < ordinal < interval < ratio
+
+        See: https://en.wikipedia.org/wiki/Level_of_measurement
+        """
+
+        if type == "nominal" or type == "ordinal":
+            type = "nominal"
+            self.set_data_type({col: type})
+
+        if type == "interval" or type == "ratio" or type == "quantitative":
+            type = "quantitative"
+            self.set_data_type({col: type})
+
+            # how far should this recursion go?
+            # if self._parent_df is not None:
+            #     self._parent_df.set_data_type({col: type})
+
     # agg functions
     def aggregate(self, func=None, axis=0, *args, **kwargs):
         with self.history.pause():
@@ -1287,11 +1335,11 @@ class LuxDataFrame(pd.DataFrame):
         ret_value.pre_aggregated = True
         ret_value.history = self.history.copy()
         ret_value._parent_df = self
-       
+
         def get_func_name(func):
             if callable(func):
                 return func.__name__
-            else: # it should be of the string type
+            else:  # it should be of the string type
                 return func
 
         # Not already logged since history frozen
@@ -1301,20 +1349,32 @@ class LuxDataFrame(pd.DataFrame):
         elif callable(func):
             # it could be possible that users directly pass the function variable to aggregate
             self.history.append_event(func.__name__, [], rank_type="parent", child_df=ret_value)
-        # for some reason is_list_like(dict) == True so MUST compare dict first 
+        # for some reason is_list_like(dict) == True so MUST compare dict first
         elif is_dict_like(func):
             for col, aggs in func.items():
                 if is_list_like(aggs):
                     for a in aggs:
-                        ret_value.history.append_event(get_func_name(a), [col], rank_type="child", child_df=None)
-                        self.history.append_event(get_func_name(a), [col], rank_type="parent", child_df=ret_value)
-                else: # is aggs is str
-                    ret_value.history.append_event(get_func_name(aggs), [col], rank_type="child", child_df=None)
-                    self.history.append_event(get_func_name(aggs), [col], rank_type="parent", child_df=ret_value)
+                        ret_value.history.append_event(
+                            get_func_name(a), [col], rank_type="child", child_df=None
+                        )
+                        self.history.append_event(
+                            get_func_name(a), [col], rank_type="parent", child_df=ret_value
+                        )
+                else:  # is aggs is str
+                    ret_value.history.append_event(
+                        get_func_name(aggs), [col], rank_type="child", child_df=None
+                    )
+                    self.history.append_event(
+                        get_func_name(aggs), [col], rank_type="parent", child_df=ret_value
+                    )
         elif is_list_like(func):
             for f_name in func:
-                ret_value.history.append_event(get_func_name(f_name), [], rank_type="child", child_df=None)
-                self.history.append_event(get_func_name(f_name), [], rank_type="parent", child_df=ret_value)
+                ret_value.history.append_event(
+                    get_func_name(f_name), [], rank_type="child", child_df=None
+                )
+                self.history.append_event(
+                    get_func_name(f_name), [], rank_type="parent", child_df=ret_value
+                )
 
         return ret_value
 
@@ -1360,6 +1420,8 @@ class LuxDataFrame(pd.DataFrame):
                 cols = []
         # history
         ret_value.history.append_event(name, cols, rank_type="child", child_df=None)
-        self.history.append_event(name, cols, rank_type="parent", child_df=ret_value) # TODO Logging this on parent may be misleading and not using for vis rn
+        self.history.append_event(
+            name, cols, rank_type="parent", child_df=ret_value
+        )  # TODO Logging this on parent may be misleading and not using for vis rn
 
         return ret_value

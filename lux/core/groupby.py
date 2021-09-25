@@ -60,19 +60,50 @@ class LuxGroupBy(pd.core.groupby.groupby.GroupBy):
         if isinstance(func, str) or callable(func):
              # it could be possible that users directly pass the function variable to aggregate
             ret_value.history.append_event(get_func_name(func), [], rank_type="child", child_df=None)
+            # ret_value = self._decide_type(col, get_func_name(a), ret_value) # call with all the columns?
+
         # for some reason is_list_like({}) == True so MUST compare dict first 
         elif is_dict_like(func):
             for col, aggs in func.items():
                 if is_list_like(aggs):
                     for a in aggs:
                         ret_value.history.append_event(get_func_name(a), [col], rank_type="child", child_df=None)
+                        ret_value = self._decide_type(col, get_func_name(a), ret_value)
                 else: # aggs is str
                     ret_value.history.append_event(get_func_name(aggs), [col], rank_type="child", child_df=None)
+                    ret_value = self._decide_type(col, get_func_name(aggs), ret_value)
+
         elif is_list_like(func):
             for f_name in func:
                 ret_value.history.append_event(get_func_name(f_name), [], rank_type="child", child_df=None)
+                # ret_value = self._decide_type(col, get_func_name(a), ret_value) # call with all the columns?
 
         return ret_value
+    
+    def _decide_type(self, col: str, func_name: str, dfOrSeries):
+        """
+        update data type here and on parent
+        type is in [ordinal, nominal, interval, ratio] and is converted to lux types
+        Only update if a MORE selective type where nominal < ordinal < interval < ratio
+
+        See: https://en.wikipedia.org/wiki/Level_of_measurement
+        """
+        type = None
+        if func_name in ["min", "max", "median"]:
+            type = "ordinal"
+        if func_name in ["mean", "sum"]:
+            type = "interval"
+        if func_name in ["prod", "std", "var", "sem", "skew"]:
+            type = "ratio"
+
+        if type == "interval" or type == "ratio":
+            td = {col: "quantitative"}
+            dfOrSeries.set_data_type(td)
+
+            if self._parent_df is not None:
+                self._parent_df.set_data_type(td)
+        
+        return dfOrSeries
 
     agg = aggregate
 
@@ -97,9 +128,12 @@ class LuxGroupBy(pd.core.groupby.groupby.GroupBy):
     ## Utils, etc   #
     #################
     def _lux_copymd(self, ret_value):
+        r = ret_value._data_type
         for attr in self._metadata:
             ret_value.__dict__[attr] = getattr(self, attr, None)
-
+        
+        if r is not None:
+            ret_value._data_type = r # if inferred new data types want to keep these and not the parents
         ret_value.history = ret_value.history.copy()
         return ret_value
 
@@ -152,60 +186,78 @@ class LuxGroupBy(pd.core.groupby.groupby.GroupBy):
     ##################
     ## agg functions #
     ##################
-    def _eval_agg_function_lux(self, func_name: str, *args, **kwargs):
+    def _eval_agg_function_lux(self, func_name: str, infer_type:str, *args, **kwargs):
         with self.history.pause():
             method = getattr(super(LuxGroupBy, self), func_name)
             ret_value = method(*args, **kwargs)
 
         ret_value = self._lux_copymd(ret_value) 
         cols = []
-        if hasattr(ret_value, "columns") and func_name != "size":
-            # in groupby case, when the function is size, the returned object is a Series;
-            # while for others, the returned object is a DataFrame with the affected columns as its columns
+
+        if hasattr(ret_value, "columns"): # is a df
             cols = ret_value.columns.tolist()
-            # if so, the func has been applied to each column, we do not need to log column information
-            if self._parent_df is not None and (len(cols) == len(self._parent_df.columns) - 1):
-                cols = []
+        elif hasattr(ret_value, "name") and ret_value.name is not None:
+            cols = [ret_value.name]
+
+        # data type inference
+        if (infer_type == "interval" or 
+            infer_type == "ratio" or 
+            infer_type == "quantitative"):
+
+            infer_type = "quantitative"
+            type_dict = {c:infer_type for c in cols}
+            
+            # set types on returned object
+            ret_value.set_data_type(type_dict)
+
+            # and parent dataframe
+            # N.B. This is often getting called from LuxSeriesGroupBy so the parent is null rather than the actual parent
+            if self._parent_df is not None:
+                self._parent_df.set_data_type(type_dict)
+
+        # compare to len - 1 bc one col was used for grouping
+        if self._parent_df is not None and (len(cols) == len(self._parent_df.columns) - 1):
+            cols = []
         ret_value.history.append_event(func_name, cols, rank_type="child", child_df=None)
         ret_value._parent_df = self 
 
         return ret_value
 
     def size(self, *args, **kwargs):
-        return self._eval_agg_function_lux("size", *args, **kwargs)
+        return self._eval_agg_function_lux("size", None, *args, **kwargs)
 
     def mean(self, *args, **kwargs):
-        return self._eval_agg_function_lux("mean", *args, **kwargs)
+        return self._eval_agg_function_lux("mean", "interval", *args, **kwargs)
 
     def min(self, *args, **kwargs):
-        return self._eval_agg_function_lux("min", *args, **kwargs)
+        return self._eval_agg_function_lux("min", "ordinal", *args, **kwargs)
 
     def max(self, *args, **kwargs):
-        return self._eval_agg_function_lux("max", *args, **kwargs)
+        return self._eval_agg_function_lux("max", "ordinal", *args, **kwargs)
 
     def count(self, *args, **kwargs):
-        return self._eval_agg_function_lux("count", *args, **kwargs)
+        return self._eval_agg_function_lux("count", None, *args, **kwargs)
 
     def sum(self, *args, **kwargs):
-        return self._eval_agg_function_lux("sum", *args, **kwargs)
+        return self._eval_agg_function_lux("sum", "interval", *args, **kwargs)
 
     def prod(self, *args, **kwargs):
-        return self._eval_agg_function_lux("prod", *args, **kwargs)
+        return self._eval_agg_function_lux("prod", "ratio", *args, **kwargs)
 
     def median(self, *args, **kwargs):
-        return self._eval_agg_function_lux("median", *args, **kwargs)
+        return self._eval_agg_function_lux("median", "ordinal", *args, **kwargs)
 
     def std(self, *args, **kwargs):
-        return self._eval_agg_function_lux("std", *args, **kwargs)
+        return self._eval_agg_function_lux("std", "ratio", *args, **kwargs)
 
     def var(self, *args, **kwargs):
-        return self._eval_agg_function_lux("var", *args, **kwargs)
+        return self._eval_agg_function_lux("var", "ratio", *args, **kwargs)
 
     def sem(self, *args, **kwargs):
-        return self._eval_agg_function_lux("sem", *args, **kwargs)
+        return self._eval_agg_function_lux("sem", "ratio", *args, **kwargs)
 
     def skew(self, *args, **kwargs):
-        return self._eval_agg_function_lux("skew", *args, **kwargs)
+        return self._eval_agg_function_lux("skew", "ratio", *args, **kwargs)
 
 class LuxDataFrameGroupBy(LuxGroupBy, pd.core.groupby.generic.DataFrameGroupBy):
     def __init__(self, *args, **kwargs):
