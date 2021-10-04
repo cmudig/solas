@@ -438,7 +438,7 @@ class LuxSeries(pd.Series):
         name = "Unnamed" if self.name is None else self.name
         # manually set the data type to avoid mistakes like identifying the "Year" as temporal
         # see set_data_type for a more detailed explanation why this works for the series
-        # ret_value.set_data_type({name: "nominal"})
+        ret_value.set_data_type({name: "nominal"})
         # add to history
         self._log_events("isna", ret_value)
         return ret_value
@@ -459,7 +459,7 @@ class LuxSeries(pd.Series):
         name = "Unnamed" if self.name is None else self.name
         # manually set the data type to avoid mistakes like identifying the "Year" as temporal
         # see set_data_type for a more detailed explanation why this works for the series
-        # ret_value.set_data_type({name: "nominal"})
+        ret_value.set_data_type({name: "nominal"})
         # add to history
         self._log_events("isna", ret_value)
         return ret_value
@@ -480,7 +480,7 @@ class LuxSeries(pd.Series):
         name = "Unnamed" if self.name is None else self.name
         # manually set the data type to avoid mistakes like identifying the "Year" as temporal
         # see set_data_type for a more detailed explanation why this works for the series
-        # ret_value.set_data_type({name: "nominal"})
+        ret_value.set_data_type({name: "nominal"})
 
         # add to history
         self._log_events("notnull", ret_value)
@@ -502,7 +502,7 @@ class LuxSeries(pd.Series):
         name = "Unnamed" if self.name is None else self.name
         # manually set the data type to avoid mistakes like identifying the "Year" as temporal
         # see set_data_type for a more detailed explanation why this works for the series
-        # ret_value.set_data_type({name: "nominal"})
+        ret_value.set_data_type({name: "nominal"})
 
         # add to history
         self._log_events("notnull", ret_value)
