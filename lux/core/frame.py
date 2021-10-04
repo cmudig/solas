@@ -783,22 +783,7 @@ class LuxDataFrame(pd.DataFrame):
         else:
             implicit_mre_rec, curr_hist_index = implicit_mre(self, self.selectedHistoryIndex)
         implicit_mre_JSON = LuxDataFrame.rec_to_JSON([implicit_mre_rec])
-        # if len(implicit_mre_JSON) > 0:
-        #     print("implicit_mre_JSON")
-        #     for vis in implicit_mre_JSON[0]["vspec"]:
-        #         print("----------------------------------------------------")
-        #         if "layer" in vis:
-        #             for graph in vis["layer"]:
-        #                 print("--------------")
-        #                 print(graph.get("encoding", ""))
-        #                 print(graph.get("mark", ""))
-        #         elif ("encoding" in vis) and ("mark" in vis):
-        #             for channel in vis["encoding"]:
-        #                 print("************")
-        #                 print(channel)
-        #                 print(vis["encoding"][channel])
-        #             print("***%s***" % vis["mark"])
-
+        
         return luxwidget.LuxWidget(
             currentVis=widgetJSON["current_vis"],
             recommendations=widgetJSON["recommendation"],
@@ -1058,6 +1043,8 @@ class LuxDataFrame(pd.DataFrame):
         _this = super(LuxDataFrame, self).__finalize__(other, method, **kwargs)
         if _this.history is not None:
             _this.history = _this.history.copy()
+        if _this._data_type is not None:
+            _this._data_type = _this._data_type.copy()
         _this._parent_df = other
 
         return _this
@@ -1172,7 +1159,7 @@ class LuxDataFrame(pd.DataFrame):
         # no matter what the actual data type is.
         # This will cause an error in visualization of this column
         # therefore we provide overriding data type manually here.
-        # ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
     def isnull(self, *args, **kwargs):
@@ -1184,7 +1171,7 @@ class LuxDataFrame(pd.DataFrame):
         # we do this more due to the consideration of formalality
         # the same rationale applies to the notnull and notna
         # Besides we do not need to worry about the pd.isna since in this case, the df.isna is also finally called.
-        # ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
     def notnull(self, *args, **kwargs):
@@ -1194,7 +1181,7 @@ class LuxDataFrame(pd.DataFrame):
         ret_value.history.delete_at(-1)  # isna gets added before
         ret_value.history.append_event("notnull", [], rank_type="child")
 
-        # ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
     def notna(self, *args, **kwargs):
@@ -1204,7 +1191,7 @@ class LuxDataFrame(pd.DataFrame):
         ret_value.history.delete_at(-1)  # isna gets added before
         ret_value.history.append_event("notnull", [], rank_type="child")
 
-        # ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
+        ret_value.set_data_type({column:"nominal" for column in ret_value.columns})
         return ret_value
 
     def dropna(self, axis=0, how="any", thresh=None, subset=None, inplace=False):
