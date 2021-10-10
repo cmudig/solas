@@ -1024,6 +1024,15 @@ class LuxDataFrame(pd.DataFrame):
 
         if is_hashable(key) and key in self.columns:
             self.history.append_event("assign", [key])
+            
+        if isinstance(value, LuxSeries) and value.data_type:
+            # to ensure that the data type of the right-hand value, if exists, 
+            # is copied over to that of the new item
+            inferred_data_type = list(value.data_type.values())[0]
+            # the data type of a LuxSeries must only contain one item but we do not know its key
+            print("key {}, type {}".format(key, inferred_data_type))
+            # and its value is the one we need here.
+            self.set_data_type({key: inferred_data_type})
 
         # # when assiging to same col, dont log twice
         # if self.history.check_event(-1, op_name="col_ref", cols=[key]):
