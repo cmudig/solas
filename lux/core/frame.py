@@ -389,18 +389,22 @@ class LuxDataFrame(pd.DataFrame):
         if recommendations["collection"] is not None and len(recommendations["collection"]) > 0:
             rec_infolist.append(recommendations)
 
-    def show_all_column_vis(self):
+    def show_all_column_vis(self, child=None):
         # for a small dataframe, it is very likely to be aggregated and therefore consist of mixed types in one column
-        # for example, df[["Origin", "Brand"]].describe() is of mixted types and satisfy all other conditions
+        # for example, df[["Origin", "Brand"]].describe() is of mixed types and satisfy all other conditions
         # the visualization of which will cause an error
         # on the other hand, if it is preaggregated, we will always create a vis in the maintain_recs()
+
+        ## explanation for the first condition (len(self.columns) < 4 or child)
+        # a non-empty child means that we are currently drawing charts for a series.
+        # At this time, the LHS of the widget should ideally be the bar/histogram chart of this particular series.
         if (
-            len(self.columns) > 1
-            and len(self.columns) < 4
+            (len(self.columns) < 4 or child is not None)
             and not self.pre_aggregated
             and (self.intent == [] or self.intent is None)
         ):
-            vis = Vis(list(self.columns), self)
+            vis = Vis(list(child.columns), child) if child is not None else Vis(list(self.columns), self)
+            # use the column of the child instead of all columns in the parent dataframe
             if vis.mark != "":
                 vis._all_column = True
                 self.current_vis = VisList([vis])
@@ -493,7 +497,7 @@ class LuxDataFrame(pd.DataFrame):
 
             self._rec_info = new_rec_infolist
 
-            self.show_all_column_vis()
+            self.show_all_column_vis(child=child)
             self._widget = self.render_widget(child=child)
         # re-render widget for the current dataframe if previous rec is not recomputed
         self._recs_fresh = True
@@ -783,7 +787,7 @@ class LuxDataFrame(pd.DataFrame):
         else:
             implicit_mre_rec, curr_hist_index = implicit_mre(self, self.selectedHistoryIndex)
         implicit_mre_JSON = LuxDataFrame.rec_to_JSON([implicit_mre_rec])
-        
+
         return luxwidget.LuxWidget(
             currentVis=widgetJSON["current_vis"],
             recommendations=widgetJSON["recommendation"],
