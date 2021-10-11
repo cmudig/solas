@@ -1027,10 +1027,10 @@ class LuxDataFrame(pd.DataFrame):
 
         if isinstance(value, LuxSeries) and value.data_type:
             # to ensure that the data type of the right-hand value, if exists, 
-            # is copied over to that of the new item
+            # is copied over to that of the left-hand value
             inferred_data_type = list(value.data_type.values())[0]
             # the data type of a LuxSeries must only contain one item but we do not know its key
-            # and its value is the one we need here.
+            # though its value is the one we need here.
             self.set_data_type({key: inferred_data_type})
 
         # # when assiging to same col, dont log twice
@@ -1051,6 +1051,7 @@ class LuxDataFrame(pd.DataFrame):
         _this = super(LuxDataFrame, self).__finalize__(other, method, **kwargs)
         if _this.history is not None:
             _this.history = _this.history.copy()
+        # otherwise, the parent and child dataframe will share the same dict object
         if _this._data_type is not None:
             _this._data_type = _this._data_type.copy()
         _this._parent_df = other
