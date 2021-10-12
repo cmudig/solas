@@ -34,6 +34,7 @@ class LuxGroupBy(pd.core.groupby.groupby.GroupBy):
         super(LuxGroupBy, self).__init__(*args, **kwargs)
         self._history = History(self)
         self._parent_df = None
+        self._data_type = {}
 
     @property
     def history(self):
