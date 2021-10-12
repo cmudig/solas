@@ -1,4 +1,7 @@
-# Lux 
+# Solas
+
+Solas is a jupyter extension for visualization recommendation that uses your analysis history to provide better recommendations.
+
 With Program Analysis -- Development version. 
 
 See below for install instructions
