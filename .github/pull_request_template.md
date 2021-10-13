@@ -4,7 +4,7 @@ Describe the big picture of your changes here. If it fixes a bug or resolves a f
 
 ## Changes
 
-Describe the changes that your code introduces to Lux. Have you made corresponding tests and added the appropriate documentation for your changes?
+Describe the changes that your code introduces to Solas. Have you made corresponding tests and added the appropriate documentation for your changes?
 
 ## Example Output
 

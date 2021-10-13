@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,25 +12,25 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
-from lux.executor.PandasExecutor import PandasExecutor
-from lux.vis.Vis import Vis
-from lux.vis.VisList import VisList
+from solas.executor.PandasExecutor import PandasExecutor
+from solas.vis.Vis import Vis
+from solas.vis.VisList import VisList
 
 
 def test_lazy_execution(global_var):
     df = pytest.car_df
     intent = [
-        lux.Clause(attribute="Horsepower", aggregation="mean"),
-        lux.Clause(attribute="Origin"),
+        solas.Clause(attribute="Horsepower", aggregation="mean"),
+        solas.Clause(attribute="Origin"),
     ]
     vis = Vis(intent)
     # Check data field in vis is empty before calling executor
     assert vis.data is None
     PandasExecutor.execute([vis], df)
-    assert type(vis.data) == lux.core.frame.LuxDataFrame
+    assert type(vis.data) == solas.core.frame.SolasDataFrame
 
 
 def test_selection(global_var):
@@ -38,35 +38,35 @@ def test_selection(global_var):
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     intent = [
-        lux.Clause(attribute=["Horsepower", "Weight", "Acceleration"]),
-        lux.Clause(attribute="Year"),
+        solas.Clause(attribute=["Horsepower", "Weight", "Acceleration"]),
+        solas.Clause(attribute="Year"),
     ]
     vislist = VisList(intent, df)
-    assert all([type(vis.data) == lux.core.frame.LuxDataFrame for vis in vislist])
+    assert all([type(vis.data) == solas.core.frame.SolasDataFrame for vis in vislist])
     assert all(vislist[2].data.columns == ["Year", "Acceleration"])
 
 
 def test_aggregation(global_var):
     df = pytest.car_df
     intent = [
-        lux.Clause(attribute="Horsepower", aggregation="mean"),
-        lux.Clause(attribute="Origin"),
+        solas.Clause(attribute="Horsepower", aggregation="mean"),
+        solas.Clause(attribute="Origin"),
     ]
     vis = Vis(intent, df)
     result_df = vis.data
     assert int(result_df[result_df["Origin"] == "USA"]["Horsepower"]) == 119
 
     intent = [
-        lux.Clause(attribute="Horsepower", aggregation="sum"),
-        lux.Clause(attribute="Origin"),
+        solas.Clause(attribute="Horsepower", aggregation="sum"),
+        solas.Clause(attribute="Origin"),
     ]
     vis = Vis(intent, df)
     result_df = vis.data
     assert int(result_df[result_df["Origin"] == "Japan"]["Horsepower"]) == 6307
 
     intent = [
-        lux.Clause(attribute="Horsepower", aggregation="max"),
-        lux.Clause(attribute="Origin"),
+        solas.Clause(attribute="Horsepower", aggregation="max"),
+        solas.Clause(attribute="Origin"),
     ]
     vis = Vis(intent, df)
     result_df = vis.data
@@ -74,8 +74,8 @@ def test_aggregation(global_var):
 
 
 def test_colored_bar_chart(global_var):
-    from lux.vis.Vis import Vis
-    from lux.vis.Vis import Clause
+    from solas.vis.Vis import Vis
+    from solas.vis.Vis import Clause
 
     df = pytest.car_df
 
@@ -93,8 +93,8 @@ def test_colored_bar_chart(global_var):
 
 
 def test_colored_line_chart(global_var):
-    from lux.vis.Vis import Vis
-    from lux.vis.Vis import Clause
+    from solas.vis.Vis import Vis
+    from solas.vis.Vis import Clause
 
     df = pytest.car_df
     # change pandas dtype for the column "Year" to datetype
@@ -119,9 +119,9 @@ def test_filter(global_var):
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     intent = [
-        lux.Clause(attribute="Horsepower"),
-        lux.Clause(attribute="Year"),
-        lux.Clause(attribute="Origin", filter_op="=", value="USA"),
+        solas.Clause(attribute="Horsepower"),
+        solas.Clause(attribute="Year"),
+        solas.Clause(attribute="Origin", filter_op="=", value="USA"),
     ]
     vis = Vis(intent, df)
     vis._vis_data = df
@@ -133,8 +133,8 @@ def test_inequalityfilter(global_var):
     df = pytest.car_df
     vis = Vis(
         [
-            lux.Clause(attribute="Horsepower", filter_op=">", value=50),
-            lux.Clause(attribute="MilesPerGal"),
+            solas.Clause(attribute="Horsepower", filter_op=">", value=50),
+            solas.Clause(attribute="MilesPerGal"),
         ]
     )
     vis._vis_data = df
@@ -143,8 +143,8 @@ def test_inequalityfilter(global_var):
     assert len(vis.data) == 386
 
     intent = [
-        lux.Clause(attribute="Horsepower", filter_op="<=", value=100),
-        lux.Clause(attribute="MilesPerGal"),
+        solas.Clause(attribute="Horsepower", filter_op="<=", value=100),
+        solas.Clause(attribute="MilesPerGal"),
     ]
     vis = Vis(intent, df)
     vis._vis_data = df
@@ -159,23 +159,23 @@ def test_inequalityfilter(global_var):
 
 def test_binning(global_var):
     df = pytest.car_df
-    vis = Vis([lux.Clause(attribute="Horsepower")], df)
+    vis = Vis([solas.Clause(attribute="Horsepower")], df)
     nbins = list(filter(lambda x: x.bin_size != 0, vis._inferred_intent))[0].bin_size
     assert len(vis.data) == nbins
 
 
 def test_record(global_var):
     df = pytest.car_df
-    vis = Vis([lux.Clause(attribute="Cylinders")], df)
+    vis = Vis([solas.Clause(attribute="Cylinders")], df)
     assert len(vis.data) == len(df["Cylinders"].unique())
 
 
 def test_filter_aggregation_fillzero_aligned(global_var):
     df = pytest.car_df
     intent = [
-        lux.Clause(attribute="Cylinders"),
-        lux.Clause(attribute="MilesPerGal"),
-        lux.Clause("Origin=Japan"),
+        solas.Clause(attribute="Cylinders"),
+        solas.Clause(attribute="MilesPerGal"),
+        solas.Clause("Origin=Japan"),
     ]
     vis = Vis(intent, df)
     result = vis.data
@@ -189,7 +189,7 @@ def test_filter_aggregation_fillzero_aligned(global_var):
 
 def test_exclude_attribute(global_var):
     df = pytest.car_df
-    intent = [lux.Clause("?", exclude=["Name", "Year"]), lux.Clause("Horsepower")]
+    intent = [solas.Clause("?", exclude=["Name", "Year"]), solas.Clause("Horsepower")]
     vislist = VisList(intent, df)
     for vis in vislist:
         assert vis.get_attr_by_channel("x")[0].attribute != "Year"

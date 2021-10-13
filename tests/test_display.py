@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
-from lux.vis.Vis import Vis
-from lux.vis.VisList import VisList
+from solas.vis.Vis import Vis
+from solas.vis.VisList import VisList
 
 
 def test_to_pandas(global_var):
@@ -24,7 +24,7 @@ def test_to_pandas(global_var):
     df.to_pandas()
 
 
-def test_display_LuxDataframe(global_var):
+def test_display_SolasDataframe(global_var):
     df = pytest.car_df
     df._ipython_display_()
 

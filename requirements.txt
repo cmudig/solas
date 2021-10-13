@@ -5,8 +5,8 @@ numpy>=1.20.3
 pandas>=1.2.0
 scikit-learn>=0.22
 matplotlib>=3.0.0
-# lux-widget>=0.1.4
-# lux-widget @ git+git://github.com/willeppy/lux-widget.git@master
+# solas-widget>=0.1.4
+# solas-widget @ git+git://github.com/willeppy/solas-widget.git@master
 us
 iso3166
 pyemd>=0.5.1

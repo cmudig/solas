@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import lux
+import solas
 
-lux.config.interestingness_fallback = False
-lux.config.pandas_fallback = False
+solas.config.interestingness_fallback = False
+solas.config.pandas_fallback = False

@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
 
@@ -25,14 +25,14 @@ def _check_log(df, op_name, parent_status=None, cols=None):
         assert set(df.history[-1].cols) == set(cols), "These columns should be logged as attributes of the event {}".format(cols)
 
 def test_unique(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     new_df = df["Cylinders"]
     unique_values = new_df.unique()
     _check_log(df, "unique", parent_status="parent", cols=["Cylinders"])
     _check_log(df, "unique", cols=["Cylinders"])
 
 def test_value_counts(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     new_df = df["Cylinders"]
     ret_df = new_df.value_counts()
     _check_log(df, "value_counts", parent_status="parent", cols=["Cylinders"])

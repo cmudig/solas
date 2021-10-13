@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
-from lux.vis.Vis import Vis
-from lux.vis.VisList import VisList
+from solas.vis.Vis import Vis
+from solas.vis.VisList import VisList
 import psycopg2
 
 
@@ -27,7 +27,7 @@ def test_underspecified_no_vis(global_var, test_recs):
     assert df.current_vis is None or len(df.current_vis) == 0
 
     # test only one filter context case.
-    df.set_intent([lux.Clause(attribute="Origin", filter_op="=", value="USA")])
+    df.set_intent([solas.Clause(attribute="Origin", filter_op="=", value="USA")])
     test_recs(df, no_vis_actions)
     assert len(df.current_vis) == 0
     df.clear_intent()
@@ -36,7 +36,7 @@ def test_underspecified_no_vis(global_var, test_recs):
 def test_underspecified_single_vis(global_var, test_recs):
     one_vis_actions = ["Enhance", "Filter", "Generalize"]
     df = pytest.car_df
-    df.set_intent([lux.Clause(attribute="MilesPerGal"), lux.Clause(attribute="Weight")])
+    df.set_intent([solas.Clause(attribute="MilesPerGal"), solas.Clause(attribute="Weight")])
     test_recs(df, one_vis_actions)
     assert len(df.current_vis) == 1
     assert df.current_vis[0].mark == "scatter"
@@ -50,38 +50,38 @@ def test_underspecified_single_vis(global_var, test_recs):
 # def test_underspecified_vis_collection(test_recs):
 # 	multiple_vis_actions = ["Current viss"]
 
-# 	df = pd.read_csv("lux/data/car.csv")
+# 	df = pd.read_csv("solas/data/car.csv")
 # 	df["Year"] = pd.to_datetime(df["Year"], format='%Y') # change pandas dtype for the column "Year" to datetype
 
-# 	df.set_intent([lux.Clause(attribute = ["Horsepower", "Weight", "Acceleration"]), lux.Clause(attribute ="Year", channel="x")])
+# 	df.set_intent([solas.Clause(attribute = ["Horsepower", "Weight", "Acceleration"]), solas.Clause(attribute ="Year", channel="x")])
 # 	assert len(df.current_vis) == 3
 # 	assert df.current_vis[0].mark == "line"
 # 	for vlist in df.current_vis:
 # 		assert (vlist.get_attr_by_channel("x")[0].attribute == "Year")
 # 	test_recs(df, multiple_vis_actions)
 
-# 	df.set_intent([lux.Clause(attribute ="?"), lux.Clause(attribute ="Year", channel="x")])
+# 	df.set_intent([solas.Clause(attribute ="?"), solas.Clause(attribute ="Year", channel="x")])
 # 	assert len(df.current_vis) == len(list(df.columns)) - 1 # we remove year by year so its 8 vis instead of 9
 # 	for vlist in df.current_vis:
 # 		assert (vlist.get_attr_by_channel("x")[0].attribute == "Year")
 # 	test_recs(df, multiple_vis_actions)
 
-# 	df.set_intent([lux.Clause(attribute ="?", data_type="quantitative"), lux.Clause(attribute ="Year")])
+# 	df.set_intent([solas.Clause(attribute ="?", data_type="quantitative"), solas.Clause(attribute ="Year")])
 # 	assert len(df.current_vis) == len([vis.get_attr_by_data_type("quantitative") for vis in df.current_vis]) # should be 5
 # 	test_recs(df, multiple_vis_actions)
 
-# 	df.set_intent([lux.Clause(attribute ="?", data_model="measure"), lux.Clause(attribute="MilesPerGal", channel="y")])
+# 	df.set_intent([solas.Clause(attribute ="?", data_model="measure"), solas.Clause(attribute="MilesPerGal", channel="y")])
 # 	for vlist in df.current_vis:
 # 		print (vlist.get_attr_by_channel("y")[0].attribute == "MilesPerGal")
 # 	test_recs(df, multiple_vis_actions)
 
-# 	df.set_intent([lux.Clause(attribute ="?", data_model="measure"), lux.Clause(attribute ="?", data_model="measure")])
+# 	df.set_intent([solas.Clause(attribute ="?", data_model="measure"), solas.Clause(attribute ="?", data_model="measure")])
 # 	assert len(df.current_vis) == len([vis.get_attr_by_data_model("measure") for vis in df.current_vis]) #should be 25
 # 	test_recs(df, multiple_vis_actions)
 
 
 def test_set_intent_as_vis(global_var, test_recs):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.car_df
     df._ipython_display_()
     vis = df.recommendation["Correlation"][0]
@@ -102,49 +102,49 @@ def test_recs():
 
 
 def test_parse(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.car_df
-    vlst = VisList([lux.Clause("Origin=?"), lux.Clause(attribute="MilesPerGal")], df)
+    vlst = VisList([solas.Clause("Origin=?"), solas.Clause(attribute="MilesPerGal")], df)
     assert len(vlst) == 3
 
     df = pytest.car_df
-    vlst = VisList([lux.Clause("Origin=?"), lux.Clause("MilesPerGal")], df)
+    vlst = VisList([solas.Clause("Origin=?"), solas.Clause("MilesPerGal")], df)
     assert len(vlst) == 3
 
-    df = pd.read_csv("lux/data/car.csv")
-    vlst = VisList([lux.Clause("Origin=?"), lux.Clause("MilesPerGal")], df)
+    df = pd.read_csv("solas/data/car.csv")
+    vlst = VisList([solas.Clause("Origin=?"), solas.Clause("MilesPerGal")], df)
     assert len(vlst) == 3
 
 
 def test_underspecified_vis_collection_zval(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     # check if the number of charts is correct
     df = pytest.car_df
     vlst = VisList(
         [
-            lux.Clause(attribute="Origin", filter_op="=", value="?"),
-            lux.Clause(attribute="MilesPerGal"),
+            solas.Clause(attribute="Origin", filter_op="=", value="?"),
+            solas.Clause(attribute="MilesPerGal"),
         ],
         df,
     )
     assert len(vlst) == 3
 
     # does not work
-    # df = pd.read_csv("lux/data/car.csv")
-    # vlst = VisList([lux.Clause(attribute = ["Origin","Cylinders"], filter_op="=",value="?"),lux.Clause(attribute = ["Horsepower"]),lux.Clause(attribute = "Weight")],df)
+    # df = pd.read_csv("solas/data/car.csv")
+    # vlst = VisList([solas.Clause(attribute = ["Origin","Cylinders"], filter_op="=",value="?"),solas.Clause(attribute = ["Horsepower"]),solas.Clause(attribute = "Weight")],df)
     # assert len(vlst) == 8
 
 
 def test_sort_bar(global_var):
-    from lux.processor.Compiler import Compiler
-    from lux.vis.Vis import Vis
+    from solas.processor.Compiler import Compiler
+    from solas.vis.Vis import Vis
 
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.car_df
     vis = Vis(
         [
-            lux.Clause(attribute="Acceleration", data_model="measure", data_type="quantitative"),
-            lux.Clause(attribute="Origin", data_model="dimension", data_type="nominal"),
+            solas.Clause(attribute="Acceleration", data_model="measure", data_type="quantitative"),
+            solas.Clause(attribute="Origin", data_model="dimension", data_type="nominal"),
         ],
         df,
     )
@@ -154,8 +154,8 @@ def test_sort_bar(global_var):
     df = pytest.car_df
     vis = Vis(
         [
-            lux.Clause(attribute="Acceleration", data_model="measure", data_type="quantitative"),
-            lux.Clause(attribute="Name", data_model="dimension", data_type="nominal"),
+            solas.Clause(attribute="Acceleration", data_model="measure", data_type="quantitative"),
+            solas.Clause(attribute="Name", data_model="dimension", data_type="nominal"),
         ],
         df,
     )
@@ -164,16 +164,16 @@ def test_sort_bar(global_var):
 
 
 def test_specified_vis_collection(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.car_df
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
 
     vlst = VisList(
         [
-            lux.Clause(attribute="Horsepower"),
-            lux.Clause(attribute="Brand"),
-            lux.Clause(attribute="Origin", value=["Japan", "USA"]),
+            solas.Clause(attribute="Horsepower"),
+            solas.Clause(attribute="Brand"),
+            solas.Clause(attribute="Origin", value=["Japan", "USA"]),
         ],
         df,
     )
@@ -181,9 +181,9 @@ def test_specified_vis_collection(global_var):
 
     vlst = VisList(
         [
-            lux.Clause(attribute=["Horsepower", "Weight"]),
-            lux.Clause(attribute="Brand"),
-            lux.Clause(attribute="Origin", value=["Japan", "USA"]),
+            solas.Clause(attribute=["Horsepower", "Weight"]),
+            solas.Clause(attribute="Brand"),
+            solas.Clause(attribute="Origin", value=["Japan", "USA"]),
         ],
         df,
     )
@@ -196,12 +196,12 @@ def test_specified_vis_collection(global_var):
 
 
 def test_specified_channel_enforced_vis_collection(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.car_df
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     visList = VisList(
-        [lux.Clause(attribute="?"), lux.Clause(attribute="MilesPerGal", channel="x")],
+        [solas.Clause(attribute="?"), solas.Clause(attribute="MilesPerGal", channel="x")],
         df,
     )
     for vis in visList:
@@ -209,20 +209,20 @@ def test_specified_channel_enforced_vis_collection(global_var):
 
 
 def test_autoencoding_scatter(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     # No channel specified
     df = pytest.car_df
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-    vis = Vis([lux.Clause(attribute="MilesPerGal"), lux.Clause(attribute="Weight")], df)
+    vis = Vis([solas.Clause(attribute="MilesPerGal"), solas.Clause(attribute="Weight")], df)
     check_attribute_on_channel(vis, "MilesPerGal", "x")
     check_attribute_on_channel(vis, "Weight", "y")
 
     # Partial channel specified
     vis = Vis(
         [
-            lux.Clause(attribute="MilesPerGal", channel="y"),
-            lux.Clause(attribute="Weight"),
+            solas.Clause(attribute="MilesPerGal", channel="y"),
+            solas.Clause(attribute="Weight"),
         ],
         df,
     )
@@ -232,8 +232,8 @@ def test_autoencoding_scatter(global_var):
     # Full channel specified
     vis = Vis(
         [
-            lux.Clause(attribute="MilesPerGal", channel="y"),
-            lux.Clause(attribute="Weight", channel="x"),
+            solas.Clause(attribute="MilesPerGal", channel="y"),
+            solas.Clause(attribute="Weight", channel="x"),
         ],
         df,
     )
@@ -244,29 +244,29 @@ def test_autoencoding_scatter(global_var):
         # Should throw error because there should not be columns with the same channel specified
         df.set_intent(
             [
-                lux.Clause(attribute="MilesPerGal", channel="x"),
-                lux.Clause(attribute="Weight", channel="x"),
+                solas.Clause(attribute="MilesPerGal", channel="x"),
+                solas.Clause(attribute="Weight", channel="x"),
             ]
         )
     df.clear_intent()
 
 
 def test_autoencoding_scatter():
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     # No channel specified
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(
         df["Year"], format="%Y"
     )  # change pandas dtype for the column "Year" to datetype
-    vis = Vis([lux.Clause(attribute="MilesPerGal"), lux.Clause(attribute="Weight")], df)
+    vis = Vis([solas.Clause(attribute="MilesPerGal"), solas.Clause(attribute="Weight")], df)
     check_attribute_on_channel(vis, "MilesPerGal", "x")
     check_attribute_on_channel(vis, "Weight", "y")
 
     # Partial channel specified
     vis = Vis(
         [
-            lux.Clause(attribute="MilesPerGal", channel="y"),
-            lux.Clause(attribute="Weight"),
+            solas.Clause(attribute="MilesPerGal", channel="y"),
+            solas.Clause(attribute="Weight"),
         ],
         df,
     )
@@ -276,8 +276,8 @@ def test_autoencoding_scatter():
     # Full channel specified
     vis = Vis(
         [
-            lux.Clause(attribute="MilesPerGal", channel="y"),
-            lux.Clause(attribute="Weight", channel="x"),
+            solas.Clause(attribute="MilesPerGal", channel="y"),
+            solas.Clause(attribute="Weight", channel="x"),
         ],
         df,
     )
@@ -288,28 +288,28 @@ def test_autoencoding_scatter():
         # Should throw error because there should not be columns with the same channel specified
         df.set_intent(
             [
-                lux.Clause(attribute="MilesPerGal", channel="x"),
-                lux.Clause(attribute="Weight", channel="x"),
+                solas.Clause(attribute="MilesPerGal", channel="x"),
+                solas.Clause(attribute="Weight", channel="x"),
             ]
         )
 
 
 def test_autoencoding_scatter():
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     # No channel specified
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(
         df["Year"], format="%Y"
     )  # change pandas dtype for the column "Year" to datetype
-    vis = Vis([lux.Clause(attribute="MilesPerGal"), lux.Clause(attribute="Weight")], df)
+    vis = Vis([solas.Clause(attribute="MilesPerGal"), solas.Clause(attribute="Weight")], df)
     check_attribute_on_channel(vis, "MilesPerGal", "x")
     check_attribute_on_channel(vis, "Weight", "y")
 
     # Partial channel specified
     vis = Vis(
         [
-            lux.Clause(attribute="MilesPerGal", channel="y"),
-            lux.Clause(attribute="Weight"),
+            solas.Clause(attribute="MilesPerGal", channel="y"),
+            solas.Clause(attribute="Weight"),
         ],
         df,
     )
@@ -319,8 +319,8 @@ def test_autoencoding_scatter():
     # Full channel specified
     vis = Vis(
         [
-            lux.Clause(attribute="MilesPerGal", channel="y"),
-            lux.Clause(attribute="Weight", channel="x"),
+            solas.Clause(attribute="MilesPerGal", channel="y"),
+            solas.Clause(attribute="Weight", channel="x"),
         ],
         df,
     )
@@ -331,40 +331,40 @@ def test_autoencoding_scatter():
         # Should throw error because there should not be columns with the same channel specified
         df.set_intent(
             [
-                lux.Clause(attribute="MilesPerGal", channel="x"),
-                lux.Clause(attribute="Weight", channel="x"),
+                solas.Clause(attribute="MilesPerGal", channel="x"),
+                solas.Clause(attribute="Weight", channel="x"),
             ]
         )
 
 
 def test_autoencoding_histogram(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     # No channel specified
     df = pytest.car_df
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-    vis = Vis([lux.Clause(attribute="MilesPerGal", channel="y")], df)
+    vis = Vis([solas.Clause(attribute="MilesPerGal", channel="y")], df)
     check_attribute_on_channel(vis, "MilesPerGal", "y")
 
-    vis = Vis([lux.Clause(attribute="MilesPerGal", channel="x")], df)
+    vis = Vis([solas.Clause(attribute="MilesPerGal", channel="x")], df)
     assert vis.get_attr_by_channel("x")[0].attribute == "MilesPerGal"
     assert vis.get_attr_by_channel("y")[0].attribute == "Record"
 
 
 def test_autoencoding_line_chart(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.car_df
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-    vis = Vis([lux.Clause(attribute="Year"), lux.Clause(attribute="Acceleration")], df)
+    vis = Vis([solas.Clause(attribute="Year"), solas.Clause(attribute="Acceleration")], df)
     check_attribute_on_channel(vis, "Year", "x")
     check_attribute_on_channel(vis, "Acceleration", "y")
 
     # Partial channel specified
     vis = Vis(
         [
-            lux.Clause(attribute="Year", channel="y"),
-            lux.Clause(attribute="Acceleration"),
+            solas.Clause(attribute="Year", channel="y"),
+            solas.Clause(attribute="Acceleration"),
         ],
         df,
     )
@@ -374,8 +374,8 @@ def test_autoencoding_line_chart(global_var):
     # Full channel specified
     vis = Vis(
         [
-            lux.Clause(attribute="Year", channel="y"),
-            lux.Clause(attribute="Acceleration", channel="x"),
+            solas.Clause(attribute="Year", channel="y"),
+            solas.Clause(attribute="Acceleration", channel="x"),
         ],
         df,
     )
@@ -386,22 +386,22 @@ def test_autoencoding_line_chart(global_var):
         # Should throw error because there should not be columns with the same channel specified
         df.set_intent(
             [
-                lux.Clause(attribute="Year", channel="x"),
-                lux.Clause(attribute="Acceleration", channel="x"),
+                solas.Clause(attribute="Year", channel="x"),
+                solas.Clause(attribute="Acceleration", channel="x"),
             ]
         )
     df.clear_intent()
 
 
 def test_autoencoding_color_line_chart(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.car_df
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     intent = [
-        lux.Clause(attribute="Year"),
-        lux.Clause(attribute="Acceleration"),
-        lux.Clause(attribute="Origin"),
+        solas.Clause(attribute="Year"),
+        solas.Clause(attribute="Acceleration"),
+        solas.Clause(attribute="Origin"),
     ]
     vis = Vis(intent, df)
     check_attribute_on_channel(vis, "Year", "x")
@@ -410,15 +410,15 @@ def test_autoencoding_color_line_chart(global_var):
 
 
 def test_autoencoding_color_scatter_chart(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.car_df
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     vis = Vis(
         [
-            lux.Clause(attribute="Horsepower"),
-            lux.Clause(attribute="Acceleration"),
-            lux.Clause(attribute="Origin"),
+            solas.Clause(attribute="Horsepower"),
+            solas.Clause(attribute="Acceleration"),
+            solas.Clause(attribute="Origin"),
         ],
         df,
     )
@@ -426,9 +426,9 @@ def test_autoencoding_color_scatter_chart(global_var):
     # although it could pass the compiler, we could not draw the vis due to the Originn is not 
     vis = Vis(
         [
-            lux.Clause(attribute="Horsepower"),
-            lux.Clause(attribute="Acceleration", channel="color"),
-            lux.Clause(attribute="Origin"),
+            solas.Clause(attribute="Horsepower"),
+            solas.Clause(attribute="Acceleration", channel="color"),
+            solas.Clause(attribute="Origin"),
         ],
         df,
     )
@@ -436,11 +436,11 @@ def test_autoencoding_color_scatter_chart(global_var):
 
 
 def test_populate_options(global_var):
-    lux.config.set_executor_type("Pandas")
-    from lux.processor.Compiler import Compiler
+    solas.config.set_executor_type("Pandas")
+    from solas.processor.Compiler import Compiler
 
     df = pytest.car_df
-    df.set_intent([lux.Clause(attribute="?"), lux.Clause(attribute="MilesPerGal")])
+    df.set_intent([solas.Clause(attribute="?"), solas.Clause(attribute="MilesPerGal")])
     col_set = set()
     for specOptions in Compiler.populate_wildcard_options(df._intent, df)["attributes"]:
         for clause in specOptions:
@@ -449,8 +449,8 @@ def test_populate_options(global_var):
 
     df.set_intent(
         [
-            lux.Clause(attribute="?", data_model="measure"),
-            lux.Clause(attribute="MilesPerGal"),
+            solas.Clause(attribute="?", data_model="measure"),
+            solas.Clause(attribute="MilesPerGal"),
         ]
     )
     df._ipython_display_()
@@ -466,14 +466,14 @@ def test_populate_options(global_var):
 
 
 def test_remove_all_invalid(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.car_df
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     # with pytest.warns(UserWarning,match="duplicate attribute specified in the intent"):
     df.set_intent(
         [
-            lux.Clause(attribute="Origin", filter_op="=", value="USA"),
-            lux.Clause(attribute="Origin"),
+            solas.Clause(attribute="Origin", filter_op="=", value="USA"),
+            solas.Clause(attribute="Origin"),
         ]
     )
     df._ipython_display_()

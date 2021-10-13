@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
-from lux.vis.VisList import VisList
-from lux.vis.Vis import Vis
+from solas.vis.VisList import VisList
+from solas.vis.Vis import Vis
 
 
 def test_vis(global_var):
@@ -56,19 +56,19 @@ def test_vis_collection_set_intent(global_var):
 
 
 def test_remove(global_var):
-    df = pd.read_csv("lux/data/car.csv")
-    vis = Vis([lux.Clause("Horsepower"), lux.Clause("Acceleration")], df)
+    df = pd.read_csv("solas/data/car.csv")
+    vis = Vis([solas.Clause("Horsepower"), solas.Clause("Acceleration")], df)
     vis.remove_column_from_spec("Horsepower", remove_first=False)
     assert vis._inferred_intent[0].attribute == "Acceleration"
 
 
 def test_remove_identity(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     vis = Vis(["Horsepower", "Horsepower"], df)
     vis.remove_column_from_spec("Horsepower")
     assert vis._inferred_intent == [], "Remove all instances of Horsepower"
 
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     vis = Vis(["Horsepower", "Horsepower"], df)
     vis.remove_column_from_spec("Horsepower", remove_first=True)
     assert len(vis._inferred_intent) == 1, "Remove only 1 instances of Horsepower"
@@ -76,9 +76,9 @@ def test_remove_identity(global_var):
 
 
 def test_refresh_collection(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-    df.set_intent([lux.Clause(attribute="Acceleration"), lux.Clause(attribute="Horsepower")])
+    df.set_intent([solas.Clause(attribute="Acceleration"), solas.Clause(attribute="Horsepower")])
     df._ipython_display_()
     enhanceCollection = df.recommendation["Enhance"]
     enhanceCollection.refresh_source(df[df["Origin"] == "USA"])
@@ -86,20 +86,20 @@ def test_refresh_collection(global_var):
 
 
 def test_vis_custom_aggregation_as_str(global_var):
-    df = pd.read_csv("lux/data/college.csv")
+    df = pd.read_csv("solas/data/college.csv")
     import numpy as np
 
-    vis = Vis(["HighestDegree", lux.Clause("AverageCost", aggregation="max")], df)
+    vis = Vis(["HighestDegree", solas.Clause("AverageCost", aggregation="max")], df)
     assert vis.get_attr_by_data_model("measure")[0].aggregation == "max"
     assert vis.get_attr_by_data_model("measure")[0]._aggregation_name == "max"
 
 
 def test_vis_custom_aggregation_as_numpy_func(global_var):
-    df = pd.read_csv("lux/data/college.csv")
-    from lux.vis.Vis import Vis
+    df = pd.read_csv("solas/data/college.csv")
+    from solas.vis.Vis import Vis
     import numpy as np
 
-    vis = Vis(["HighestDegree", lux.Clause("AverageCost", aggregation=np.ptp)], df)
+    vis = Vis(["HighestDegree", solas.Clause("AverageCost", aggregation=np.ptp)], df)
     assert vis.get_attr_by_data_model("measure")[0].aggregation == np.ptp
     assert vis.get_attr_by_data_model("measure")[0]._aggregation_name == "ptp"
 
@@ -108,26 +108,26 @@ def test_vis_collection_via_list_of_vis(global_var):
     df = pytest.olympic
     # change pandas dtype for the column "Year" to datetype
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-    from lux.vis.VisList import VisList
-    from lux.vis.Vis import Vis
+    from solas.vis.VisList import VisList
+    from solas.vis.Vis import Vis
 
     vcLst = []
     for attribute in ["Sport", "Year", "Height", "HostRegion", "SportType"]:
-        vis = Vis([lux.Clause("Weight"), lux.Clause(attribute)])
+        vis = Vis([solas.Clause("Weight"), solas.Clause(attribute)])
         vcLst.append(vis)
     vlist = VisList(vcLst, df)
     assert len(vlist) == 5
 
 
 def test_vis_to_altair_basic_df(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     vis = Vis(["Weight", "Horsepower"], df)
     code = vis.to_altair()
     assert "alt.Chart(df)" in code, "Unable to export to Altair"
 
 
 def test_vis_to_altair_custom_named_df(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     some_weirdly_named_df = df.dropna()
     vis = Vis(["Weight", "Horsepower"], some_weirdly_named_df)
     code = vis.to_altair()
@@ -137,7 +137,7 @@ def test_vis_to_altair_custom_named_df(global_var):
 
 
 def test_vis_to_altair_standalone(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     vis = Vis(["Weight", "Horsepower"], df)
     code = vis.to_altair(standalone=True)
     assert (
@@ -154,7 +154,7 @@ def test_vis_list_custom_title_override(global_var):
     vcLst = []
     for attribute in ["Sport", "Year", "Height", "HostRegion", "SportType"]:
         vis = Vis(
-            [lux.Clause("Weight"), lux.Clause(attribute)],
+            [solas.Clause("Weight"), solas.Clause(attribute)],
             title="overriding dummy title",
         )
         vcLst.append(vis)
@@ -164,9 +164,9 @@ def test_vis_list_custom_title_override(global_var):
 
 
 def test_vis_set_intent(global_var):
-    from lux.vis.Vis import Vis
+    from solas.vis.Vis import Vis
 
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     vis = Vis(["Weight", "Horsepower"], df)
     vis._ipython_display_()
     assert "Horsepower" in str(vis._code)
@@ -176,9 +176,9 @@ def test_vis_set_intent(global_var):
 
 
 def test_vis_list_set_intent(global_var):
-    from lux.vis.VisList import VisList
+    from solas.vis.VisList import VisList
 
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     vislist = VisList(["Horsepower", "?"], df)
     vislist._ipython_display_()
     for vis in vislist:
@@ -190,9 +190,9 @@ def test_vis_list_set_intent(global_var):
 
 
 def test_text_not_overridden():
-    from lux.vis.Vis import Vis
+    from solas.vis.Vis import Vis
 
-    df = pd.read_csv("lux/data/college.csv")
+    df = pd.read_csv("solas/data/college.csv")
     vis = Vis(["Region", "Geography"], df)
     vis._ipython_display_()
     code = vis.to_altair()
@@ -200,8 +200,8 @@ def test_text_not_overridden():
 
 
 def test_bar_chart(global_var):
-    df = pd.read_csv("lux/data/car.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("solas/data/car.csv")
+    solas.config.plotting_backend = "vegalite"
     vis = Vis(["Origin", "Acceleration"], df)
     vis_code = vis.to_altair()
     assert "alt.Chart(visData).mark_bar()" in vis_code
@@ -214,8 +214,8 @@ def test_bar_chart(global_var):
         in vis_code
     )
 
-    lux.config.plotting_style = None
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_style = None
+    solas.config.plotting_backend = "matplotlib"
     vis = Vis(["Origin", "Acceleration"], df)
     vis_code = vis.to_matplotlib()
     assert "ax.barh(bars, measurements, align='center')" in vis_code
@@ -224,8 +224,8 @@ def test_bar_chart(global_var):
 
 
 def test_colored_bar_chart(global_var):
-    df = pd.read_csv("lux/data/car.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("solas/data/car.csv")
+    solas.config.plotting_backend = "vegalite"
     vis = Vis(["Cylinders", "Acceleration", "Origin"], df)
     vis_code = vis.to_altair()
     assert "alt.Chart(visData).mark_bar()" in vis_code
@@ -238,7 +238,7 @@ def test_colored_bar_chart(global_var):
         in vis_code
     )
 
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_backend = "matplotlib"
     vis = Vis(["Cylinders", "Acceleration", "Origin"], df)
     vis_code = vis.to_matplotlib()
     assert "ax.barh" in vis_code
@@ -248,7 +248,7 @@ def test_colored_bar_chart(global_var):
 
 
 def test_bar_uniform():
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df["Type"] = "A"
     vis = Vis(["Type"], df)
@@ -257,8 +257,8 @@ def test_bar_uniform():
 
 
 def test_scatter_chart(global_var):
-    df = pd.read_csv("lux/data/car.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("solas/data/car.csv")
+    solas.config.plotting_backend = "vegalite"
     vis = Vis(["Acceleration", "Weight"], df)
     vis_code = vis.to_altair()
     assert "alt.Chart(df).mark_circle()" in vis_code
@@ -271,7 +271,7 @@ def test_scatter_chart(global_var):
         in vis_code
     )
 
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_backend = "matplotlib"
     vis = Vis(["Acceleration", "Weight"], df)
     vis_code = vis.to_matplotlib()
     assert "ax.scatter(x_pts, y_pts, alpha=0.5)" in vis_code
@@ -283,8 +283,8 @@ def test_scatter_chart(global_var):
 
 
 def test_colored_scatter_chart(global_var):
-    df = pd.read_csv("lux/data/car.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("solas/data/car.csv")
+    solas.config.plotting_backend = "vegalite"
     vis = Vis(["Origin", "Acceleration", "Weight"], df)
     vis_code = vis.to_altair()
     assert "alt.Chart(df).mark_circle()" in vis_code
@@ -297,7 +297,7 @@ def test_colored_scatter_chart(global_var):
         in vis_code
     )
 
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_backend = "matplotlib"
     vis = Vis(["Origin", "Acceleration", "Weight"], df)
     vis_code = vis.to_matplotlib()
     assert "ax.scatter" in vis_code
@@ -310,8 +310,8 @@ def test_colored_scatter_chart(global_var):
 
 
 def test_line_chart(global_var):
-    df = pd.read_csv("lux/data/car.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("solas/data/car.csv")
+    solas.config.plotting_backend = "vegalite"
     vis = Vis(["Year", "Acceleration"], df)
     vis_code = vis.to_altair()
     assert "alt.Chart(visData).mark_line()" in vis_code
@@ -321,7 +321,7 @@ def test_line_chart(global_var):
     )
     assert "x = alt.X('Year', type = 'temporal', axis=alt.Axis(title='Year'))" in vis_code
 
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_backend = "matplotlib"
     vis = Vis(["Year", "Acceleration"], df)
     vis_code = vis.to_matplotlib()
     assert "ax.plot(x_pts, y_pts)" in vis_code
@@ -330,8 +330,8 @@ def test_line_chart(global_var):
 
 
 def test_colored_line_chart(global_var):
-    df = pd.read_csv("lux/data/car.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("solas/data/car.csv")
+    solas.config.plotting_backend = "vegalite"
     vis = Vis(["Year", "Acceleration", "Origin"], df)
     vis_code = vis.to_altair()
     assert "alt.Chart(visData).mark_line()" in vis_code
@@ -341,7 +341,7 @@ def test_colored_line_chart(global_var):
     )
     assert "x = alt.X('Year', type = 'temporal', axis=alt.Axis(title='Year'))" in vis_code
 
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_backend = "matplotlib"
     vis = Vis(["Year", "Acceleration", "Origin"], df)
     vis_code = vis.to_matplotlib()
     assert "ax.plot" in vis_code
@@ -351,8 +351,8 @@ def test_colored_line_chart(global_var):
 
 
 def test_histogram_chart(global_var):
-    df = pd.read_csv("lux/data/car.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("solas/data/car.csv")
+    solas.config.plotting_backend = "vegalite"
     vis = Vis(["Displacement"], df)
     vis_code = vis.to_altair()
     assert "alt.Chart(visData).mark_bar" in vis_code
@@ -362,7 +362,7 @@ def test_histogram_chart(global_var):
     )
     assert 'alt.Y("Number of Records", type="quantitative")' in vis_code
 
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_backend = "matplotlib"
     vis = Vis(["Displacement"], df)
     vis_code = vis.to_matplotlib()
     assert "ax.bar(bars, measurements, width=32.25)" in vis_code
@@ -371,7 +371,7 @@ def test_histogram_chart(global_var):
 
 
 def test_histogram_uniform():
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df["Units"] = 4.0
     vis = Vis(["Units"], df)
@@ -380,8 +380,8 @@ def test_histogram_uniform():
 
 
 def test_heatmap_chart(global_var):
-    df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/airbnb_nyc.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("https://raw.githubusercontent.com/lux/solas-datasets/master/data/airbnb_nyc.csv")
+    solas.config.plotting_backend = "vegalite"
     vis = Vis(["price", "longitude"], df)
     vis_code = vis.to_altair()
     assert "alt.Chart(visData).mark_rect()" in vis_code
@@ -397,7 +397,7 @@ def test_heatmap_chart(global_var):
     assert "y2=alt.Y2('yBinEnd')" in vis_code
     assert 'scale=alt.Scale(type="log")' in vis_code
 
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_backend = "matplotlib"
     vis = Vis(["price", "longitude"], df)
     vis_code = vis.to_matplotlib()
     assert "plt.imshow(df, cmap='Blues')" in vis_code
@@ -407,8 +407,8 @@ def test_heatmap_chart(global_var):
 
 
 def test_colored_heatmap_chart(global_var):
-    df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/airbnb_nyc.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("https://raw.githubusercontent.com/lux/solas-datasets/master/data/airbnb_nyc.csv")
+    solas.config.plotting_backend = "vegalite"
     vis = Vis(["price", "longitude", "availability_365"], df)
     vis_code = vis.to_altair()
     assert "alt.Chart(visData).mark_rect()" in vis_code
@@ -425,7 +425,7 @@ def test_colored_heatmap_chart(global_var):
     assert 'scale=alt.Scale(type="log")' in vis_code
     assert "chart.encode(color=alt.Color('availability_365',type='quantitative'))" in vis_code
 
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_backend = "matplotlib"
     vis = Vis(["price", "longitude", "availability_365"], df)
     vis_code = vis.to_matplotlib()
     assert "plt.imshow(df, cmap='viridis')" in vis_code
@@ -436,8 +436,8 @@ def test_colored_heatmap_chart(global_var):
 
 
 def test_vegalite_default_actions_registered(global_var):
-    df = pd.read_csv("lux/data/car.csv")
-    lux.config.plotting_backend = "vegalite"
+    df = pd.read_csv("solas/data/car.csv")
+    solas.config.plotting_backend = "vegalite"
     df._ipython_display_()
     # Histogram Chart
     assert "Distribution" in df.recommendation
@@ -463,7 +463,7 @@ def test_vegalite_default_actions_registered_2(global_var):
         "https://raw.githubusercontent.com/altair-viz/vega_datasets/master/vega_datasets/_data/airports.csv"
     )
     df["magnitude"] = np.random.randint(0, 20, size=len(df))
-    lux.config.plotting_backend = "vegalite"
+    solas.config.plotting_backend = "vegalite"
 
     # Choropleth Map
     assert "Geographical" in df.recommendation
@@ -479,8 +479,8 @@ def test_vegalite_default_actions_registered_2(global_var):
 
 
 def test_matplotlib_default_actions_registered(global_var):
-    lux.config.plotting_backend = "matplotlib"
-    df = pd.read_csv("lux/data/car.csv")
+    solas.config.plotting_backend = "matplotlib"
+    df = pd.read_csv("solas/data/car.csv")
     df._ipython_display_()
     # Histogram Chart
     assert "Distribution" in df.recommendation
@@ -506,7 +506,7 @@ def test_matplotlib_default_actions_registered_2(global_var):
         "https://raw.githubusercontent.com/altair-viz/vega_datasets/master/vega_datasets/_data/airports.csv"
     )
     df["magnitude"] = np.random.randint(0, 20, size=len(df))
-    lux.config.plotting_backend = "matplotlib"
+    solas.config.plotting_backend = "matplotlib"
 
     # Choropleth Map
     assert "Geographical" in df.recommendation
@@ -522,34 +522,34 @@ def test_matplotlib_default_actions_registered_2(global_var):
 
 
 def test_vegalite_heatmap_flag_config():
-    prev_heatmap_config = lux.config.heatmap
-    lux.config.heatmap = True
-    df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/airbnb_nyc.csv")
-    lux.config.plotting_backend = "vegalite"
+    prev_heatmap_config = solas.config.heatmap
+    solas.config.heatmap = True
+    df = pd.read_csv("https://raw.githubusercontent.com/lux/solas-datasets/master/data/airbnb_nyc.csv")
+    solas.config.plotting_backend = "vegalite"
     df._ipython_display_()
     # Heatmap Chart
     assert df.recommendation["Correlation"][0]._postbin
-    lux.config.heatmap = False
-    df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/airbnb_nyc.csv")
+    solas.config.heatmap = False
+    df = pd.read_csv("https://raw.githubusercontent.com/lux/solas-datasets/master/data/airbnb_nyc.csv")
     df = df.copy()
     assert not df.recommendation["Correlation"][0]._postbin
     assert "Geographical" not in df.recommendation
-    lux.config.heatmap = prev_heatmap_config
+    solas.config.heatmap = prev_heatmap_config
 
 def test_matplotlib_heatmap_flag_config():
-    prev_heatmap_config = lux.config.heatmap
-    lux.config.heatmap = True # in case it is turned off
-    df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/airbnb_nyc.csv")
-    lux.config.plotting_backend = "matplotlib"
+    prev_heatmap_config = solas.config.heatmap
+    solas.config.heatmap = True # in case it is turned off
+    df = pd.read_csv("https://raw.githubusercontent.com/lux/solas-datasets/master/data/airbnb_nyc.csv")
+    solas.config.plotting_backend = "matplotlib"
     df._ipython_display_()
     # Heatmap Chart
     assert df.recommendation["Correlation"][0]._postbin
-    lux.config.heatmap = False
-    df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/airbnb_nyc.csv")
+    solas.config.heatmap = False
+    df = pd.read_csv("https://raw.githubusercontent.com/lux/solas-datasets/master/data/airbnb_nyc.csv")
     df = df.copy()
     assert not df.recommendation["Correlation"][0]._postbin
-    lux.config.heatmap = prev_heatmap_config
-    lux.config.plotting_backend = "vegalite"
+    solas.config.heatmap = prev_heatmap_config
+    solas.config.plotting_backend = "vegalite"
 
 
 def test_all_column_current_vis():
@@ -565,7 +565,7 @@ def test_all_column_current_vis():
 
 
 def test_all_column_current_vis_filter():
-    df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/car.csv")
+    df = pd.read_csv("https://raw.githubusercontent.com/lux/solas-datasets/master/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     two_col_df = df[["Year", "Displacement"]]
     two_col_df._ipython_display_()
@@ -578,7 +578,7 @@ def test_all_column_current_vis_filter():
 
 
 def test_intent_override_all_column():
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df = df[["Year", "Displacement"]]
     df.intent = ["Year"]
     df._ipython_display_()

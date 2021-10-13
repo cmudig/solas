@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,66 +13,66 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
-from lux.executor.SQLExecutor import SQLExecutor
-from lux.vis.Vis import Vis
-from lux.vis.VisList import VisList
+from solas.executor.SQLExecutor import SQLExecutor
+from solas.vis.Vis import Vis
+from solas.vis.VisList import VisList
 import psycopg2
 
 
 def test_lazy_execution():
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
     intent = [
-        lux.Clause(attribute="horsepower", aggregation="mean"),
-        lux.Clause(attribute="origin"),
+        solas.Clause(attribute="horsepower", aggregation="mean"),
+        solas.Clause(attribute="origin"),
     ]
     vis = Vis(intent)
     # Check data field in vis is empty before calling executor
     assert vis.data is None
     SQLExecutor.execute([vis], tbl)
-    assert type(vis.data) == lux.core.frame.LuxDataFrame
+    assert type(vis.data) == solas.core.frame.SolasDataFrame
 
 
 def test_selection():
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
     intent = [
-        lux.Clause(attribute=["horsepower", "weight", "acceleration"]),
-        lux.Clause(attribute="year"),
+        solas.Clause(attribute=["horsepower", "weight", "acceleration"]),
+        solas.Clause(attribute="year"),
     ]
     vislist = VisList(intent, tbl)
-    assert all([type(vis.data) == lux.core.frame.LuxDataFrame for vis in vislist])
+    assert all([type(vis.data) == solas.core.frame.SolasDataFrame for vis in vislist])
     assert all(vislist[2].data.columns == ["year", "acceleration"])
 
 
 def test_aggregation():
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
     intent = [
-        lux.Clause(attribute="horsepower", aggregation="mean"),
-        lux.Clause(attribute="origin"),
+        solas.Clause(attribute="horsepower", aggregation="mean"),
+        solas.Clause(attribute="origin"),
     ]
     vis = Vis(intent, tbl)
     result_df = vis.data
     assert int(result_df[result_df["origin"] == "USA"]["horsepower"]) == 119
 
     intent = [
-        lux.Clause(attribute="horsepower", aggregation="sum"),
-        lux.Clause(attribute="origin"),
+        solas.Clause(attribute="horsepower", aggregation="sum"),
+        solas.Clause(attribute="origin"),
     ]
     vis = Vis(intent, tbl)
     result_df = vis.data
     assert int(result_df[result_df["origin"] == "Japan"]["horsepower"]) == 6307
 
     intent = [
-        lux.Clause(attribute="horsepower", aggregation="max"),
-        lux.Clause(attribute="origin"),
+        solas.Clause(attribute="horsepower", aggregation="max"),
+        solas.Clause(attribute="origin"),
     ]
     vis = Vis(intent, tbl)
     result_df = vis.data
@@ -80,10 +80,10 @@ def test_aggregation():
 
 
 def test_colored_bar_chart():
-    from lux.vis.Vis import Vis
-    from lux.vis.Vis import Clause
+    from solas.vis.Vis import Vis
+    from solas.vis.Vis import Clause
 
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
     x_clause = Clause(attribute="milespergal", channel="x")
@@ -101,10 +101,10 @@ def test_colored_bar_chart():
 
 
 def test_colored_line_chart():
-    from lux.vis.Vis import Vis
-    from lux.vis.Vis import Clause
+    from solas.vis.Vis import Vis
+    from solas.vis.Vis import Clause
 
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
     x_clause = Clause(attribute="year", channel="x")
@@ -123,13 +123,13 @@ def test_colored_line_chart():
 
 
 def test_filter():
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
     intent = [
-        lux.Clause(attribute="horsepower"),
-        lux.Clause(attribute="year"),
-        lux.Clause(attribute="origin", filter_op="=", value="USA"),
+        solas.Clause(attribute="horsepower"),
+        solas.Clause(attribute="year"),
+        solas.Clause(attribute="origin", filter_op="=", value="USA"),
     ]
     vis = Vis(intent, tbl)
     vis._vis_data = tbl
@@ -145,13 +145,13 @@ def test_filter():
 
 
 def test_inequalityfilter():
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
     vis = Vis(
         [
-            lux.Clause(attribute="horsepower", filter_op=">", value=50),
-            lux.Clause(attribute="milespergal"),
+            solas.Clause(attribute="horsepower", filter_op=">", value=50),
+            solas.Clause(attribute="milespergal"),
         ]
     )
     vis._vis_data = tbl
@@ -160,8 +160,8 @@ def test_inequalityfilter():
     assert filter_output[1] == ["horsepower"]
 
     intent = [
-        lux.Clause(attribute="horsepower", filter_op="<=", value=100),
-        lux.Clause(attribute="milespergal"),
+        solas.Clause(attribute="horsepower", filter_op="<=", value=100),
+        solas.Clause(attribute="milespergal"),
     ]
     vis = Vis(intent, tbl)
     vis._vis_data = tbl
@@ -171,30 +171,30 @@ def test_inequalityfilter():
 
 
 def test_binning():
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
-    vis = Vis([lux.Clause(attribute="horsepower")], tbl)
+    vis = Vis([solas.Clause(attribute="horsepower")], tbl)
     nbins = list(filter(lambda x: x.bin_size != 0, vis._inferred_intent))[0].bin_size
     assert len(vis.data) == nbins
 
 
 def test_record():
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
-    vis = Vis([lux.Clause(attribute="cylinders")], tbl)
+    vis = Vis([solas.Clause(attribute="cylinders")], tbl)
     assert len(vis.data) == len(tbl.unique_values["cylinders"])
 
 
 def test_filter_aggregation_fillzero_aligned():
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
     intent = [
-        lux.Clause(attribute="cylinders"),
-        lux.Clause(attribute="milespergal"),
-        lux.Clause("origin=Japan"),
+        solas.Clause(attribute="cylinders"),
+        solas.Clause(attribute="milespergal"),
+        solas.Clause("origin=Japan"),
     ]
     vis = Vis(intent, tbl)
     result = vis.data
@@ -203,10 +203,10 @@ def test_filter_aggregation_fillzero_aligned():
 
 
 def test_exclude_attribute():
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("cars")
 
-    intent = [lux.Clause("?", exclude=["Name", "year"]), lux.Clause("horsepower")]
+    intent = [solas.Clause("?", exclude=["Name", "year"]), solas.Clause("horsepower")]
     vislist = VisList(intent, tbl)
     for vis in vislist:
         assert vis.get_attr_by_channel("x")[0].attribute != "year"
@@ -217,7 +217,7 @@ def test_exclude_attribute():
 
 def test_null_values():
     # checks that the SQLExecutor has filtered out any None or Null values from its metadata
-    tbl = lux.LuxSQLTable()
+    tbl = solas.SolasSQLTable()
     tbl.set_SQL_table("aug_test_table")
 
     assert None not in tbl.unique_values["enrolled_university"]

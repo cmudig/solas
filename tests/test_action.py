@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,19 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
 
-from lux.vis.Vis import Vis
+from solas.vis.Vis import Vis
 
 
 def test_temporal_action(global_var):
     airbnb_df = pd.read_csv(
-        "https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/airbnb_nyc.csv"
+        "https://raw.githubusercontent.com/lux/solas-datasets/master/data/airbnb_nyc.csv"
     )
     flights_df = pd.read_csv(
-        "https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/flights.csv"
+        "https://raw.githubusercontent.com/lux/solas-datasets/master/data/flights.csv"
     )
     date_df = pd.DataFrame(
         {
@@ -83,7 +83,7 @@ def test_temporal_action(global_var):
 
 
 def test_vary_filter_val(global_var):
-    lux.config.set_executor_type("Pandas")
+    solas.config.set_executor_type("Pandas")
     df = pytest.olympic
     vis = Vis(["Height", "SportType=Ball"], df)
     df.set_intent_as_vis(vis)
@@ -101,14 +101,14 @@ def test_filter_inequality(global_var):
 
     df.set_intent(
         [
-            lux.Clause(attribute="Horsepower"),
-            lux.Clause(attribute="MilesPerGal"),
-            lux.Clause(attribute="Acceleration", filter_op=">", value=10),
+            solas.Clause(attribute="Horsepower"),
+            solas.Clause(attribute="MilesPerGal"),
+            solas.Clause(attribute="Acceleration", filter_op=">", value=10),
         ]
     )
     df._ipython_display_()
 
-    from lux.utils.utils import get_filter_specs
+    from solas.utils.utils import get_filter_specs
 
     complement_vis = df.recommendation["Filter"][0]
     fltr_clause = get_filter_specs(complement_vis._intent)[0]
@@ -142,7 +142,7 @@ def test_generalize_action(global_var):
 
 def test_row_column_group(global_var):
     df = pd.read_csv(
-        "https://github.com/lux-org/lux-datasets/blob/master/data/state_timeseries.csv?raw=true"
+        "https://github.com/lux/solas-datasets/blob/master/data/state_timeseries.csv?raw=true"
     )
     df["Date"] = pd.to_datetime(df["Date"])
     tseries = df.pivot(index="State", columns="Date", values="Value")
@@ -232,7 +232,7 @@ def test_custom_aggregation(global_var):
     import numpy as np
 
     df = pytest.college_df
-    df.set_intent(["HighestDegree", lux.Clause("AverageCost", aggregation=np.ptp)])
+    df.set_intent(["HighestDegree", solas.Clause("AverageCost", aggregation=np.ptp)])
     df._ipython_display_()
     assert list(df.recommendation.keys()) == ["Enhance", "Filter", "Generalize"]
     df.clear_intent()
@@ -265,14 +265,14 @@ def test_year_filter_value(global_var):
 
 
 def test_similarity(global_var):
-    lux.config.early_pruning = False
+    solas.config.early_pruning = False
     df = pytest.car_df
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.set_intent(
         [
-            lux.Clause("Year", channel="x"),
-            lux.Clause("Displacement", channel="y"),
-            lux.Clause("Origin=USA"),
+            solas.Clause("Year", channel="x"),
+            solas.Clause("Displacement", channel="y"),
+            solas.Clause("Origin=USA"),
         ]
     )
     df._ipython_display_()
@@ -293,21 +293,21 @@ def test_similarity(global_var):
     )[0]
     assert japan_vis.score < europe_vis.score
     df.clear_intent()
-    lux.config.early_pruning = True
+    solas.config.early_pruning = True
 
 
 def test_similarity2():
     df = pd.read_csv(
-        "https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/real_estate_tutorial.csv"
+        "https://raw.githubusercontent.com/lux/solas-datasets/master/data/real_estate_tutorial.csv"
     )
 
     df["Month"] = pd.to_datetime(df["Month"], format="%m")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
 
     df.intent = [
-        lux.Clause("Year"),
-        lux.Clause("PctForeclosured"),
-        lux.Clause("City=Crofton"),
+        solas.Clause("Year"),
+        solas.Clause("PctForeclosured"),
+        solas.Clause("City=Crofton"),
     ]
 
     ranked_list = df.recommendation["Similarity"]
@@ -328,7 +328,7 @@ def test_similarity2():
 
 
 def test_intent_retained():
-    df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/employee.csv")
+    df = pd.read_csv("https://raw.githubusercontent.com/lux/solas-datasets/master/data/employee.csv")
     df.intent = ["Attrition"]
     df._ipython_display_()
 
@@ -343,7 +343,7 @@ def test_intent_retained():
 
 
 def test_metadata_propogate_invalid_intent():
-    df = pd.read_csv("https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/employee.csv")
+    df = pd.read_csv("https://raw.githubusercontent.com/lux/solas-datasets/master/data/employee.csv")
     df.intent = ["Attrition"]
     new_df = df.groupby("BusinessTravel").mean()
     assert new_df.intent[0].attribute == "Attrition", "User-specified intent is retained"

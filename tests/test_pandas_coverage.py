@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
 import numpy as np
@@ -24,7 +24,7 @@ import warnings
 
 
 def test_deepcopy(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df._ipython_display_()
     saved_df = df.copy(deep=True)
@@ -33,7 +33,7 @@ def test_deepcopy(global_var):
 
 
 def test_rename_inplace(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df._ipython_display_()
     new_df = df.copy(deep=True)
@@ -47,23 +47,23 @@ def test_rename_inplace(global_var):
 
     assert df.data_type["Name"] == new_df.data_type["Car Name"]
 
-    inverted_data_type = lux.config.executor.invert_data_type(df.data_type)
-    new_inverted_data_type = lux.config.executor.invert_data_type(new_df.data_type)
+    inverted_data_type = solas.config.executor.invert_data_type(df.data_type)
+    new_inverted_data_type = solas.config.executor.invert_data_type(new_df.data_type)
 
     assert inverted_data_type != new_inverted_data_type
 
     assert inverted_data_type["nominal"][0] == "Name"
     assert new_inverted_data_type["nominal"][0] == "Car Name"
 
-    data_model_lookup = lux.config.executor.compute_data_model_lookup(df.data_type)
-    new_data_model_lookup = lux.config.executor.compute_data_model_lookup(new_df.data_type)
+    data_model_lookup = solas.config.executor.compute_data_model_lookup(df.data_type)
+    new_data_model_lookup = solas.config.executor.compute_data_model_lookup(new_df.data_type)
 
     assert data_model_lookup != new_data_model_lookup
 
     assert data_model_lookup["Name"] == new_data_model_lookup["Car Name"]
 
-    data_model = lux.config.executor.compute_data_model(df.data_type)
-    new_data_model = lux.config.executor.compute_data_model(new_df.data_type)
+    data_model = solas.config.executor.compute_data_model(df.data_type)
+    new_data_model = solas.config.executor.compute_data_model(new_df.data_type)
 
     assert data_model != new_data_model
 
@@ -77,7 +77,7 @@ def test_rename_inplace(global_var):
 
 
 def test_rename(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df._ipython_display_()
     new_df = df.rename(columns={"Name": "Car Name"}, inplace=False)
@@ -86,23 +86,23 @@ def test_rename(global_var):
 
     assert df.data_type["Name"] == new_df.data_type["Car Name"]
 
-    inverted_data_type = lux.config.executor.invert_data_type(df.data_type)
-    new_inverted_data_type = lux.config.executor.invert_data_type(new_df.data_type)
+    inverted_data_type = solas.config.executor.invert_data_type(df.data_type)
+    new_inverted_data_type = solas.config.executor.invert_data_type(new_df.data_type)
 
     assert inverted_data_type != new_inverted_data_type
 
     assert inverted_data_type["nominal"][0] == "Name"
     assert new_inverted_data_type["nominal"][0] == "Car Name"
 
-    data_model_lookup = lux.config.executor.compute_data_model_lookup(df.data_type)
-    new_data_model_lookup = lux.config.executor.compute_data_model_lookup(new_df.data_type)
+    data_model_lookup = solas.config.executor.compute_data_model_lookup(df.data_type)
+    new_data_model_lookup = solas.config.executor.compute_data_model_lookup(new_df.data_type)
 
     assert data_model_lookup != new_data_model_lookup
 
     assert data_model_lookup["Name"] == new_data_model_lookup["Car Name"]
 
-    data_model = lux.config.executor.compute_data_model(df.data_type)
-    new_data_model = lux.config.executor.compute_data_model(new_df.data_type)
+    data_model = solas.config.executor.compute_data_model(df.data_type)
+    new_data_model = solas.config.executor.compute_data_model(new_df.data_type)
 
     assert data_model != new_data_model
 
@@ -117,7 +117,7 @@ def test_rename(global_var):
 
 def test_rename3(global_var):
 
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.columns = [
         "col1",
@@ -144,7 +144,7 @@ def test_rename3(global_var):
 
 def test_concat(global_var):
 
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = pd.concat([df.loc[:, "Name":"Cylinders"], df.loc[:, "Year":"Origin"]], axis="columns")
     new_df._ipython_display_()
@@ -157,7 +157,7 @@ def test_concat(global_var):
 
 
 def test_groupby_agg(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.groupby("Year").agg(sum)
     new_df._ipython_display_()
@@ -166,7 +166,7 @@ def test_groupby_agg(global_var):
 
 
 def test_groupby_agg_big(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     new_df = df.groupby("Brand").agg(sum)
     new_df._ipython_display_()
     assert list(new_df.recommendation.keys()) == ["Column Groups"]
@@ -192,21 +192,21 @@ def test_groupby_agg_big(global_var):
 
 
 def test_qcut(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df["Weight"] = pd.qcut(df["Weight"], q=3)
     df._ipython_display_()
 
 
 def test_cut(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Weight"] = pd.cut(df["Weight"], bins=[0, 2500, 7500, 10000], labels=["small", "medium", "large"])
     df._ipython_display_()
 
 
 def test_groupby_agg_very_small(global_var):
 
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.groupby("Origin").agg(sum).reset_index()
     new_df._ipython_display_()
@@ -215,7 +215,7 @@ def test_groupby_agg_very_small(global_var):
 
 
 # def test_groupby_multi_index(global_var):
-#     url = 'https://github.com/lux-org/lux-datasets/blob/master/data/cars.csv?raw=true'
+#     url = 'https://github.com/lux/solas-datasets/blob/master/data/cars.csv?raw=true'
 #     df = pd.read_csv(url)
 #     df["Year"] = pd.to_datetime(df["Year"], format='%Y')
 #     new_df = df.groupby(["Year", "Cylinders"]).agg(sum).stack().reset_index()
@@ -225,7 +225,7 @@ def test_groupby_agg_very_small(global_var):
 
 
 def test_query(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.query("Weight > 3000")
     new_df._ipython_display_()
@@ -240,7 +240,7 @@ def test_query(global_var):
 
 
 def test_pop(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.pop("Weight")
     df._ipython_display_()
@@ -255,7 +255,7 @@ def test_pop(global_var):
 
 
 def test_transform(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.iloc[:, 1:].groupby("Origin").transform(sum)
     new_df._ipython_display_()
@@ -264,7 +264,7 @@ def test_transform(global_var):
 
 
 def test_get_group(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     gbobj = df.groupby("Origin")
     new_df = gbobj.get_group("Japan")
@@ -280,7 +280,7 @@ def test_get_group(global_var):
 
 
 def test_applymap(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     mapping = {"USA": 0, "Europe": 1, "Japan": 2}
     df["Origin"] = df[["Origin"]].applymap(mapping.get)
@@ -296,7 +296,7 @@ def test_applymap(global_var):
 
 
 def test_strcat(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df["combined"] = df["Origin"].str.cat(df["Brand"], sep=", ")
     df._ipython_display_()
@@ -311,7 +311,7 @@ def test_strcat(global_var):
 
 
 def test_named_agg(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.groupby("Brand").agg(
         avg_weight=("Weight", "mean"),
@@ -324,7 +324,7 @@ def test_named_agg(global_var):
 
 
 def test_change_dtype(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df["Cylinders"] = pd.Series(df["Cylinders"], dtype="Int64")
     df._ipython_display_()
@@ -339,7 +339,7 @@ def test_change_dtype(global_var):
 
 
 def test_get_dummies(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = pd.get_dummies(df) # this function ignores the copy of the history to the new dataframe
     new_df._ipython_display_()
@@ -353,7 +353,7 @@ def test_get_dummies(global_var):
 
 
 def test_drop(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.drop([0, 1, 2], axis="rows")
     new_df2 = new_df.drop(["Name", "MilesPerGal", "Cylinders"], axis="columns")
@@ -369,7 +369,7 @@ def test_drop(global_var):
 
 
 def test_merge(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.drop([0, 1, 2], axis="rows")
     new_df2 = pd.merge(df, new_df, how="left", indicator=True)
@@ -385,7 +385,7 @@ def test_merge(global_var):
 
 
 def test_prefix(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.add_prefix("1_") 
     # by changing the name, the columns recorded in the history becomes invalid
@@ -402,7 +402,7 @@ def test_prefix(global_var):
 
 
 def test_loc(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.loc[:, "Displacement":"Origin"]
     new_df._ipython_display_()
@@ -438,7 +438,7 @@ def test_loc(global_var):
 
 
 def test_iloc(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     new_df = df.iloc[:, 3:9]
     new_df._ipython_display_()
@@ -545,7 +545,7 @@ def test_index(global_var):
     # testing set_index and reset_index functions
     # setting a column as an index should remove it from the dataframe's column list
     # and change the dataframe's index name parameter
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
 
     df = df.set_index(["Name"])
@@ -578,7 +578,7 @@ def test_index(global_var):
 
 
 def test_index_col(global_var):
-    df = pd.read_csv("lux/data/car.csv", index_col="Name")
+    df = pd.read_csv("solas/data/car.csv", index_col="Name")
     # if this assert fails, then the index column has not properly been removed from the dataframe's column and registered as an index
     assert "Name" not in df.columns and df.index.name == "Name"
     df._ipython_display_()
@@ -604,11 +604,11 @@ def test_index_col(global_var):
 
 def test_df_to_series(global_var):
     # Ensure metadata is kept when going from df to series
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df._ipython_display_()  # compute metadata
     assert df.cardinality is not None
     series = df["Weight"]
-    assert isinstance(series, lux.core.series.LuxSeries), "Derived series is type LuxSeries."
+    assert isinstance(series, solas.core.series.SolasSeries), "Derived series is type SolasSeries."
     df["Weight"]._metadata
     assert (
         df["Weight"]._metadata == pytest.metadata
@@ -618,12 +618,12 @@ def test_df_to_series(global_var):
 
 
 def test_value_counts(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df._ipython_display_()  # compute metadata
     assert df.cardinality is not None
     series = df["Weight"]
     series.value_counts()
-    assert type(df["Brand"].value_counts()) == lux.core.series.LuxSeries
+    assert type(df["Brand"].value_counts()) == solas.core.series.SolasSeries
     assert (
         df["Weight"]._metadata == pytest.metadata
     ), "Metadata is lost when going from Dataframe to Series."
@@ -632,11 +632,11 @@ def test_value_counts(global_var):
 
 
 def test_str_replace(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df._ipython_display_()  # compute metadata
     assert df.cardinality is not None
     series = df["Brand"].str.replace("chevrolet", "chevy")
-    assert isinstance(series, lux.core.series.LuxSeries), "Derived series is type LuxSeries."
+    assert isinstance(series, solas.core.series.SolasSeries), "Derived series is type SolasSeries."
     assert (
         df["Brand"]._metadata == pytest.metadata
     ), "Metadata is lost when going from Dataframe to Series."
@@ -650,7 +650,7 @@ def test_str_replace(global_var):
 
 
 def test_read_json(global_var):
-    url = "https://raw.githubusercontent.com/lux-org/lux-datasets/master/data/car.json"
+    url = "https://raw.githubusercontent.com/lux/solas-datasets/master/data/car.json"
     df = pd.read_json(url)
     df._ipython_display_()
     assert set(df.recommendation.keys()) == set([
@@ -663,7 +663,7 @@ def test_read_json(global_var):
 
 
 def test_read_sas(global_var):
-    url = "https://github.com/lux-org/lux-datasets/blob/master/data/airline.sas7bdat?raw=true"
+    url = "https://github.com/lux/solas-datasets/blob/master/data/airline.sas7bdat?raw=true"
     df = pd.read_sas(url, format="sas7bdat")
     df._ipython_display_()
     assert set(df.recommendation.keys()) == set(["Correlation", "Distribution", "Temporal", "Enhance"])
@@ -671,7 +671,7 @@ def test_read_sas(global_var):
 
 
 def test_read_multi_dtype(global_var):
-    url = "https://github.com/lux-org/lux-datasets/blob/master/data/car-data.xls?raw=true"
+    url = "https://github.com/lux/solas-datasets/blob/master/data/car-data.xls?raw=true"
     df = pd.read_excel(url)
     with pytest.warns(UserWarning, match="mixed type") as w:
         df._ipython_display_()

@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
 import time
@@ -21,8 +21,8 @@ import time
 # To run the script and see the printed result, run:
 # python -m pytest -s tests/test_performance.py
 def test_lazy_maintain_performance_census(global_var):
-    lux.config.lazy_maintain = True
-    df = pd.read_csv("https://github.com/lux-org/lux-datasets/blob/master/data/census.csv?raw=true")
+    solas.config.lazy_maintain = True
+    df = pd.read_csv("https://github.com/lux/solas-datasets/blob/master/data/census.csv?raw=true")
     tic = time.perf_counter()
     df.maintain_recs()
     toc = time.perf_counter()
@@ -39,7 +39,7 @@ def test_lazy_maintain_performance_census(global_var):
         delta2 < 0.1 < delta
     ), "Subsequent display of recommendations on Census dataset took a total of {delta2:0.4f} seconds, longer than expected."
 
-    lux.config.lazy_maintain = False
+    solas.config.lazy_maintain = False
     tic = time.perf_counter()
     df.maintain_recs()
     toc = time.perf_counter()
@@ -77,10 +77,10 @@ def test_lazy_maintain_performance_census(global_var):
 
 
 def test_early_prune_performance_spotify():
-    df = pd.read_csv("https://github.com/lux-org/lux-datasets/blob/master/data/spotify.csv?raw=True")
+    df = pd.read_csv("https://github.com/lux/solas-datasets/blob/master/data/spotify.csv?raw=True")
     df.maintain_metadata()
     # With Early Pruning
-    lux.config.early_pruning = True
+    solas.config.early_pruning = True
     df.clear_intent()
     start = time.time()
     df.maintain_recs()
@@ -88,7 +88,7 @@ def test_early_prune_performance_spotify():
     with_prune_time = end - start
     assert "Large search space detected" in df._message.to_html()
     # Without Early Pruning
-    lux.config.early_pruning = False
+    solas.config.early_pruning = False
     df.clear_intent()
     start = time.time()
     df.maintain_recs()

@@ -1,7 +1,7 @@
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
-from lux.history.history import History 
+from solas.history.history import History 
 def test_append_event():
     history = History(ldf=None)
     history.append_event("describe", ["Name", "Cylinders"],  rank_type="parent")
@@ -11,7 +11,7 @@ def test_append_event():
     assert new_event.cols == ["Name", "Cylinders"], "The columns for the newly added event should be recorded"
     assert new_event.kwargs.get("rank_type", None) == "parent", "Kwargs parameters should be also recorded in the event"
 
-    assert lux.config.update_actions["flag"], "We should update actions after the history is updated"
+    assert solas.config.update_actions["flag"], "We should update actions after the history is updated"
 
 def test_edit_event():
     history = History(ldf=None)

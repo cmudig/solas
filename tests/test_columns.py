@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
 
-from lux.vis.Vis import Vis
+from solas.vis.Vis import Vis
 
 
 def test_special_char():
@@ -41,7 +41,7 @@ def test_special_char():
     ]
     test = pd.DataFrame(dataset)
 
-    from lux.vis.Vis import Vis
+    from solas.vis.Vis import Vis
 
     # TODO: add assert that checks that the bar chart is rendered correctly in Altair
     vis = Vis(["special.char"], test)
@@ -124,7 +124,7 @@ def test_abbrev_agg():
 
 
 def test_int_columns(global_var):
-    df = pd.read_csv("lux/data/college.csv")
+    df = pd.read_csv("solas/data/college.csv")
     df.columns = range(len(df.columns))
     assert list(df.recommendation.keys()) == ["Correlation", "Distribution", "Occurrence"]
     df.intent = [8, 3]
@@ -134,7 +134,7 @@ def test_int_columns(global_var):
 
 
 def test_name_column(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     new_df = df.rename(columns={"Name": "name"})
     assert list(new_df.recommendation.keys()) == [
         "Correlation",

@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,21 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
 import numpy as np
 import psycopg2
-from lux.interestingness.interestingness import interestingness
+from solas.interestingness.interestingness import interestingness
 
 
 # The following test cases are labelled for vis with <Ndim, Nmsr, Nfilter>
 def test_interestingness_1_0_0(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
 
     df.history.clear()
-    df.set_intent([lux.Clause(attribute="Origin")])
+    df.set_intent([solas.Clause(attribute="Origin")])
     df._ipython_display_()
 
     # check that top recommended enhance graph score is not none and that ordering makes intuitive sense
@@ -63,13 +63,13 @@ def test_interestingness_1_0_0(global_var):
 
 
 def test_interestingness_1_0_1(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.history.clear()
     df.set_intent(
         [
-            lux.Clause(attribute="Origin", filter_op="=", value="USA"),
-            lux.Clause(attribute="Cylinders"),
+            solas.Clause(attribute="Origin", filter_op="=", value="USA"),
+            solas.Clause(attribute="Cylinders"),
         ]
     )
     df._ipython_display_()
@@ -78,11 +78,11 @@ def test_interestingness_1_0_1(global_var):
 
 
 def test_interestingness_0_1_0(global_var):
-    lux.config.set_executor_type("Pandas")
-    df = pd.read_csv("lux/data/car.csv")
+    solas.config.set_executor_type("Pandas")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.history.clear()
-    df.set_intent([lux.Clause(attribute="Horsepower")])
+    df.set_intent([solas.Clause(attribute="Horsepower")])
     df._ipython_display_()
     # check that top recommended enhance graph score is not none and that ordering makes intuitive sense
     assert interestingness(df.recommendation["Enhance"][0], df) != None
@@ -124,13 +124,13 @@ def test_interestingness_0_1_0(global_var):
 
 
 def test_interestingness_0_1_1(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.history.clear()
     df.set_intent(
         [
-            lux.Clause(attribute="Origin", filter_op="=", value="?"),
-            lux.Clause(attribute="MilesPerGal"),
+            solas.Clause(attribute="Origin", filter_op="=", value="?"),
+            solas.Clause(attribute="MilesPerGal"),
         ]
     )
     df._ipython_display_()
@@ -140,11 +140,11 @@ def test_interestingness_0_1_1(global_var):
 
 
 def test_interestingness_1_1_0(global_var):
-    lux.config.set_executor_type("Pandas")
-    df = pd.read_csv("lux/data/car.csv")
+    solas.config.set_executor_type("Pandas")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.history.clear()
-    df.set_intent([lux.Clause(attribute="Horsepower"), lux.Clause(attribute="Year")])
+    df.set_intent([solas.Clause(attribute="Horsepower"), solas.Clause(attribute="Year")])
     df._ipython_display_()
     # check that top recommended Enhance graph score is not none (all graphs here have same score)
     assert interestingness(df.recommendation["Enhance"][0], df) != None
@@ -172,13 +172,13 @@ def test_interestingness_1_1_0(global_var):
 
 
 def test_interestingness_1_1_1(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.history.clear()
     df.set_intent(
         [
-            lux.Clause(attribute="Horsepower"),
-            lux.Clause(attribute="Origin", filter_op="=", value="USA", bin_size=20),
+            solas.Clause(attribute="Horsepower"),
+            solas.Clause(attribute="Origin", filter_op="=", value="USA", bin_size=20),
         ]
     )
     df._ipython_display_()
@@ -211,12 +211,12 @@ def test_interestingness_1_1_1(global_var):
 
 
 def test_interestingness_1_2_0(global_var):
-    from lux.vis.Vis import Vis
-    from lux.vis.Vis import Clause
-    from lux.interestingness.interestingness import interestingness
+    from solas.vis.Vis import Vis
+    from solas.vis.Vis import Clause
+    from solas.interestingness.interestingness import interestingness
 
-    lux.config.set_executor_type("Pandas")
-    df = pd.read_csv("lux/data/car.csv")
+    solas.config.set_executor_type("Pandas")
+    df = pd.read_csv("solas/data/car.csv")
     y_clause = Clause(attribute="Name", channel="y")
     color_clause = Clause(attribute="Cylinders", channel="color")
 
@@ -229,10 +229,10 @@ def test_interestingness_1_2_0(global_var):
 
 
 def test_interestingness_0_2_0(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.history.clear()
-    df.set_intent([lux.Clause(attribute="Horsepower"), lux.Clause(attribute="Acceleration")])
+    df.set_intent([solas.Clause(attribute="Horsepower"), solas.Clause(attribute="Acceleration")])
     df._ipython_display_()
     # check that top recommended enhance graph score is not none and that ordering makes intuitive sense
     assert interestingness(df.recommendation["Enhance"][0], df) != None
@@ -259,14 +259,14 @@ def test_interestingness_0_2_0(global_var):
 
 
 def test_interestingness_0_2_1(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.history.clear()
     df.set_intent(
         [
-            lux.Clause(attribute="Horsepower"),
-            lux.Clause(attribute="MilesPerGal"),
-            lux.Clause(attribute="Acceleration", filter_op=">", value=10),
+            solas.Clause(attribute="Horsepower"),
+            solas.Clause(attribute="MilesPerGal"),
+            solas.Clause(attribute="Acceleration", filter_op=">", value=10),
         ]
     )
     df._ipython_display_()
@@ -296,7 +296,7 @@ def test_interestingness_deviation_nan():
         {"date": "2017-07-25", "category": "B", "value": 0.1},
     ]
     test = pd.DataFrame(dataset)
-    from lux.vis.Vis import Vis
+    from solas.vis.Vis import Vis
 
     test["date"] = pd.to_datetime(test["date"], format="%Y-%M-%d")
     test.history.clear()
@@ -304,7 +304,7 @@ def test_interestingness_deviation_nan():
 
     vis = Vis(["date", "value", "category=A"], test)
     vis2 = Vis(["date", "value", "category=B"], test)
-    from lux.interestingness.interestingness import interestingness
+    from solas.interestingness.interestingness import interestingness
 
     smaller_diff_score = interestingness(vis, test)
     bigger_diff_score = interestingness(vis2, test)

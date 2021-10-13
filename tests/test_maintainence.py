@@ -1,4 +1,4 @@
-#  Copyright 2019-2020 The Lux Authors.
+#  Copyright 2019-2020 The Solas Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,10 +13,10 @@
 #  limitations under the License.
 
 
-from .context import lux
+from .context import solas
 import pytest
 import pandas as pd
-from lux.vis.Vis import Vis
+from solas.vis.Vis import Vis
 
 
 def test_metadata_subsequent_display(global_var):
@@ -54,7 +54,7 @@ def test_metadata_new_df_operation(global_var):
 
 
 def test_metadata_column_group_reset_df(global_var):
-    df = pd.read_csv("lux/data/car.csv")
+    df = pd.read_csv("solas/data/car.csv")
     assert not hasattr(df, "_metadata_fresh")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     assert hasattr(df, "_metadata_fresh")
@@ -85,14 +85,14 @@ def test_recs_inplace_operation(global_var):
 
 def test_intent_cleared_after_vis_data():
     df = pd.read_csv(
-        "https://github.com/lux-org/lux-datasets/blob/master/data/real_estate_tutorial.csv?raw=true"
+        "https://github.com/lux/solas-datasets/blob/master/data/real_estate_tutorial.csv?raw=true"
     )
     df["Month"] = pd.to_datetime(df["Month"], format="%m")
     df["Year"] = pd.to_datetime(df["Year"], format="%Y")
     df.intent = [
-        lux.Clause("Year"),
-        lux.Clause("PctForeclosured"),
-        lux.Clause("City=Crofton"),
+        solas.Clause("Year"),
+        solas.Clause("PctForeclosured"),
+        solas.Clause("City=Crofton"),
     ]
     df._ipython_display_()
 

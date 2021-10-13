@@ -1,4 +1,4 @@
-{% set name = "lux-api" %}
+{% set name = "solas" %}
 {% set version = "0.2.2" %}
 
 
@@ -7,7 +7,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/lux-api-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/solas-{{ version }}.tar.gz
   sha256: 01c5605a16b6130f159ab7d1d9d4ffd6fdc49ea854d9ab0f6481194e701c4a1f
 
 build:
@@ -25,19 +25,19 @@ requirements:
 
 test:
   imports:
-    - lux
-    - lux._config
+    - solas
+    - solas._config
   commands:
     - pip check
   requires:
     - pip
 
 about:
-  home: https://github.com/lux-org/lux
-  summary: A Python API for Intelligent Data Discovery
+  home: https://github.com/willeppy/solas
+  summary: Visualization Recommendations with History
   license: Apache-2.0
   license_file: LICENSE
 
 extra:
   recipe-maintainers:
-    - dorisjlee
+    - willeppy
