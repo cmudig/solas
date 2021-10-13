@@ -74,7 +74,8 @@ def plot_gb_mean_errorbar(df_m, df_s):
     index_col = tog.columns[0]
     vl = []
 
-    for c_m, c_s in zip(df_m.columns, df_s.columns):
+    for c_m in df_m.columns:
+        c_s = c_m[:-6] + "(std)" # strip off "(mean)"
         b = (
             alt.Chart(tog)
             .mark_bar()

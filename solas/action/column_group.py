@@ -103,7 +103,6 @@ def column_group(ldf):
                         and (f_map[attribute] == "mean")
                         and isinstance(ldf._parent_df, solas.core.groupby.SolasGroupBy)
                     ):
-
                         try:
                             _this_c_df = ldf[[attribute]]  # select col as df
                             old_col_name = inverted_col_map[attribute]
