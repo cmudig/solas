@@ -549,7 +549,7 @@ class PandasExecutor(Executor):
             warn_msg += "\nSee more at: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html"
             warn_msg += f"\nIf {attr} is not a temporal attribute, please use override Solas's automatically detected type:"
             warn_msg += f"\n\tdf.set_data_type({{'{attr}':'quantitative'}})"
-            warnings.warn(warn_msg, stacklevel=2)
+            # warnings.warn(warn_msg, stacklevel=2)
 
     @staticmethod
     def _is_datetime_string(series):

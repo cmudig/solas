@@ -288,7 +288,7 @@ class History:
             e = self._events[i]
             w = weights[i]
 
-            if w >= self.col_thresh and (e.kwargs.get("rank_type", None) != "parent") and not mre:
+            if w >= self.col_thresh and not mre: #(e.kwargs.get("rank_type", None) != "parent") and not mre:
                 mre = e
                 break
             i -= 1

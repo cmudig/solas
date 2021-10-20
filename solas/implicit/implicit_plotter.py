@@ -48,31 +48,40 @@ def generate_vis_from_signal(signal: Event, ldf: SolasDataFrame, ranked_cols=[])
     ldf.history.freeze()
     vis_list = VisList([])
     used_cols = []
-    if signal.op_name == "value_counts" or signal.op_name == "unique":
-        vis_list, used_cols = process_value_counts(signal, ldf)
+    processed = False
 
-    elif signal.op_name == "describe":
-        vis_list, used_cols = process_describe(signal, ldf)
-    elif signal.op_name == "gb_describe":
-        vis_list, used_cols = process_gb_describe(signal, ldf)
-    elif (
-        signal.op_name == "filter"
-        or signal.op_name == "query"
-        or signal.op_name == "slice"
-        or signal.op_name == "gb_filter"
-        or signal.op_name == "loc"
-        or signal.op_name == "iloc"
-    ):
+    if signal.kwargs.get("rank_type", None) != "parent":
+        if signal.op_name == "value_counts" or signal.op_name == "unique":
+            processed = True
+            vis_list, used_cols = process_value_counts(signal, ldf)
 
-        vis_list, used_cols = process_filter(signal, ldf, ranked_cols)
+        elif signal.op_name == "describe":
+            processed = True
+            vis_list, used_cols = process_describe(signal, ldf)
+        elif signal.op_name == "gb_describe":
+            processed = True
+            vis_list, used_cols = process_gb_describe(signal, ldf)
+        elif (
+            signal.op_name == "filter"
+            or signal.op_name == "query"
+            or signal.op_name == "slice"
+            or signal.op_name == "gb_filter"
+            or signal.op_name == "loc"
+            or signal.op_name == "iloc"
+        ):
+            processed = True
+            vis_list, used_cols = process_filter(signal, ldf, ranked_cols)
 
-    elif signal.op_name == "dropna":
-        vis_list, used_cols = process_filter(signal, ldf, ranked_cols)
+        elif signal.op_name == "dropna":
+            processed = True
+            vis_list, used_cols = process_filter(signal, ldf, ranked_cols)
 
-    elif signal.op_name == "isna" or signal.op_name == "notnull":
-        vis_list, used_cols = process_null_plot(signal, ldf)
+        elif signal.op_name == "isna" or signal.op_name == "notnull":
+            processed = True
+            vis_list, used_cols = process_null_plot(signal, ldf)
 
-    elif signal.cols and not ldf.pre_aggregated:  # generic recs
+    if not processed and signal.cols and not ldf.pre_aggregated:  # generic recs
+        #set_trace()
         vis_list, used_cols = process_generic(signal, ldf)
 
     ldf.history.unfreeze()

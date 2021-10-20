@@ -1270,6 +1270,7 @@ class SolasDataFrame(pd.DataFrame):
             self.history.unfreeze()
         # set types
         self._handle_type_infer_ambiguous(by, "nominal")
+        self.history.append_event("groupby", [by], rank_type="parent")
 
         for attr in self._metadata:
             groupby_obj.__dict__[attr] = getattr(self, attr, None)
