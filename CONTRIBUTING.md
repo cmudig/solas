@@ -37,3 +37,9 @@ May have to re-build jupyter after widget is installed for the first time, to do
 ```bash
 jupyter lab build
 ```
+
+## publishing
+```
+python setup.py sdist
+twine upload dist/*
+```
