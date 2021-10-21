@@ -779,7 +779,7 @@ class SolasDataFrame(pd.DataFrame):
 
         if child is not None:
             # if we are visualizing a child dataframe/series, we sill want to use its history to draw implicit tabs
-            implicit_mre_rec, curr_hist_index = implicit_mre(child)
+            implicit_mre_rec, curr_hist_index = implicit_mre(child) # TODO log column ref history to child so that its shown
         else:
             implicit_mre_rec, curr_hist_index = implicit_mre(self, self.selectedHistoryIndex)
         implicit_mre_JSON = SolasDataFrame.rec_to_JSON([implicit_mre_rec])
@@ -1000,6 +1000,7 @@ class SolasDataFrame(pd.DataFrame):
         # single item like str "col_name"
         if is_hashable(key) and key in self.columns:
             self.history.append_event("col_ref", [key])
+            ret_value.history.append_event("col_ref", [key])
 
         elif is_list_like(key):
             checked_keys = []
@@ -1009,6 +1010,7 @@ class SolasDataFrame(pd.DataFrame):
 
             if len(checked_keys):
                 self.history.append_event("col_ref", checked_keys)
+                ret_value.history.append_event("col_ref", checked_keys)
 
         return ret_value
 
