@@ -24,7 +24,7 @@ def rename_from_history(child, parent):
             if (
                 isinstance(parent, solas.core.series.SolasSeries)
                 and parent.name is not None
-                and parent.name != " "
+                and parent.name != "Unnamed"
             ):
                 c = parent.name
             else:

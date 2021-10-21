@@ -1,8 +1,10 @@
 import solas
 from solas.vis.CustomVis import CustomVis
 from solas.vis.Vis import Vis
-
 import altair as alt
+
+from IPython.core.debugger import set_trace
+
 
 ##################
 # Plotting funcs #
@@ -74,24 +76,55 @@ def plot_gb_mean_errorbar(df_m, df_s):
     index_col = tog.columns[0]
     vl = []
 
+    max_rows = 12
+
     for c_m in df_m.columns:
-        c_s = c_m[:-6] + "(std)" # strip off "(mean)"
+        c_s = c_m[:-6] + "(std)"  # strip off "(mean)"
+
+        vis_df = tog[[index_col, c_m, c_s]]
+        vis_df = vis_df.sort_values(c_m, ascending=False)
+
+        extra_rows_n = None
+
+        if vis_df.shape[0] > max_rows:
+            extra_rows_n = vis_df.shape[0] - max_rows
+            vis_df = vis_df.iloc[:max_rows]
+
         b = (
-            alt.Chart(tog)
+            alt.Chart(vis_df)
             .mark_bar()
-            .encode(x=alt.X(c_m, type="quantitative"), y=alt.Y(index_col, type="nominal"))
+            .encode(
+                x=alt.X(c_m, type="quantitative"),
+                y=alt.Y(
+                    index_col, type="nominal", sort=alt.EncodingSortField(field=c_m, order="descending")
+                ),
+            )
         )
 
         err = (
-            alt.Chart(tog)
-            .mark_errorbar()
-            .encode(x=alt.X(c_m, type="quantitative"), xError=c_s, y=alt.Y(index_col, type="nominal"))
+            b.mark_errorbar()
+            .encode(
+                xError=c_s,
+            )
         )
 
         v = b + err
-        intent = [solas.Clause(c_m, data_type="quantitative", data_model="measure"),
-                  solas.Clause(index_col, data_type="nominal", data_model="dimension")]
-        cv = CustomVis(intent, v, tog)
+        if extra_rows_n:
+            filt_label = alt.Chart(vis_df).mark_text(
+                x=155,
+                y=142,
+                align="right",
+                color="#ff8e04",
+                fontSize=11,
+                text=f"+ {extra_rows_n} more...",
+            )
+            v += filt_label
+
+        intent = [
+            solas.Clause(c_m, data_type="quantitative", data_model="measure"),
+            solas.Clause(index_col, data_type="nominal", data_model="dimension"),
+        ]
+        cv = CustomVis(intent, v, vis_df)
         cv.mark = "bar"
         vl.append(cv)
     return vl
