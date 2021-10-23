@@ -302,7 +302,7 @@ def process_filter(signal, ldf, ranked_cols, num_vis_cap=5):
             p_df = ldf._parent_df
         c_df = ldf
 
-    if filter_axis == 0 or filter_axis == "columns":
+    if filter_axis == 1 or filter_axis == "columns":
         # we add this conditional statement to avoid drawing filter visualization for dropna(axis="columns")
         return VisList([], ldf), []
     else:
