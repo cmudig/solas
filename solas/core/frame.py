@@ -457,7 +457,6 @@ class SolasDataFrame(pd.DataFrame):
             # from solas.action.implicit_tab import implicit_mre
 
             # TODO: Rewrite these as register action inside default actions
-            # set_trace()
             if self.pre_aggregated and self.columns.nlevels == 1:
                 # add the second condition to avoid the visualization of a multi-column object
                 # for example, df.groupby("Origin").describe()
@@ -1028,13 +1027,9 @@ class SolasDataFrame(pd.DataFrame):
             self.history.append_event("assign", [key])
 
         if isinstance(value, SolasSeries) and value.data_type:
-            # to ensure that the data type of the right-hand value, if exists, 
-            # is copied over to that of the new item
+            # to ensure that the data type of the right-hand value, if exists, is copied over to that of the new item
             inferred_data_type = list(value.data_type.values())[0]
-            # the data type of a SolasSeries must only contain one item but we do not know its key
-            # print("key {}, type {}".format(key, inferred_data_type))
-            # and its value is the one we need here.
-            self.set_data_type({key: inferred_data_type})
+            self._infer_type(key, inferred_data_type)
 
         # # when assiging to same col, dont log twice
         # if self.history.check_event(-1, op_name="col_ref", cols=[key]):
@@ -1207,7 +1202,7 @@ class SolasDataFrame(pd.DataFrame):
 
     def dropna(self, axis=0, how="any", thresh=None, subset=None, inplace=False):
         with self.history.pause():
-            ret_value = super(SolasDataFrame, self).dropna(axis, how, thresh, subset, inplace)
+            ret_value = super(SolasDataFrame, self).dropna(axis=axis, how=how, thresh=thresh, subset=subset, inplace=inplace)
 
         # subset = kwargs.get("subset", None)
         # In this way, we may leave out one possible case when the user pass subset through *args style
