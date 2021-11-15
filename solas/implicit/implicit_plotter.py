@@ -79,6 +79,10 @@ def generate_vis_from_signal(signal: Event, ldf: SolasDataFrame, ranked_cols=[])
         elif signal.op_name == "isna" or signal.op_name == "notnull":
             processed = True
             vis_list, used_cols = process_null_plot(signal, ldf)
+        
+        elif signal.op_name == "corr":  # corr
+            processed = True
+            vis_list, used_cols = process_corr(signal, ldf)
 
     if not processed and signal.cols and not ldf.pre_aggregated:  # generic recs
         #set_trace()
@@ -671,6 +675,49 @@ def plot_na_count(ldf, c_col_name, c_title):
     cv = CustomVis(intent, chart, ldf, width=90, override_c_config={"interactive": False})
 
     return cv
+
+#################################
+# Correlation matrix plotting   #
+#################################
+def process_corr(signal, ldf, max_rows_text=15):
+    ## format data
+    num_var = len(ldf)
+    column_order = list(ldf.columns)
+
+    cor_data_vis = ldf.stack().reset_index() # turn into long format for altair
+    cols = cor_data_vis.columns # should only ever be 3 cols                  
+    cor_data_vis = cor_data_vis.rename(columns={cols[0]: 'variable', cols[1]: 'variable2', cols[2]: 'correlation'})
+    cor_data_vis['correlation_label'] = cor_data_vis['correlation'].map('{:.2f}'.format)
+
+    ## encode
+    base = alt.Chart(cor_data_vis).encode(
+        x=alt.X('variable2:O', sort=column_order, title=None),
+        y=alt.Y('variable:O', sort=column_order, title=None)    
+    )
+    
+    cor_plot = base.mark_rect().encode(
+        color=alt.Color('correlation:Q',  scale=alt.Scale(domain=[-1, 1], scheme="redblue"))
+    )
+    
+    if num_var < max_rows_text:
+        cor_plot = cor_plot.properties(width= num_var * 40, height= num_var * 40)
+        text = base.mark_text().encode(
+            text='correlation_label',
+            color=alt.condition(
+                abs(alt.datum.correlation) > 0.5, 
+                alt.value('white'),
+                alt.value('black')
+            )
+        ).properties(width= num_var * 40, height= num_var * 40)
+        
+        final_plot = cor_plot + text
+    else:
+        final_plot = cor_plot
+
+    cv = CustomVis(column_order, final_plot, ldf)
+    vl = VisList([cv])
+
+    return vl, column_order
 
 
 ######################
