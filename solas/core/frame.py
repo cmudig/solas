@@ -1419,3 +1419,13 @@ class SolasDataFrame(pd.DataFrame):
         )  # TODO Logging this on parent may be misleading and not using for vis rn
 
         return ret_value
+    
+    def corr(self, *args, **kwargs):
+        with self.history.pause():
+            ret_value = super(SolasDataFrame, self).corr(*args, **kwargs)
+
+        cols = list(ret_value.columns) 
+        self.history.append_event("corr", cols, rank_type="parent", child_df=ret_value)
+        ret_value.history.append_event("corr", cols, rank_type="child" )
+
+        return ret_value
