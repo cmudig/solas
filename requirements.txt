@@ -10,4 +10,3 @@ solas-widget>=0.1.4
 us
 iso3166
 pyemd>=0.5.1
-sklearn
