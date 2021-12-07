@@ -32,7 +32,6 @@ class History:
     def __init__(self, ldf):
         self._events = []
         self._frozen_count = 0
-        self._time_decay = 0.9
         self.parent_ldf = ldf
         self.kernel = get_ipython()
         self.col_thresh = 0.25

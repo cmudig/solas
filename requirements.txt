@@ -6,8 +6,6 @@ pandas>=1.2.0 # TODO this might need to be 1.2.1 or 1.20 EXACTLY
 scikit-learn>=0.22
 matplotlib>=3.0.0
 solas-widget>=0.1.4
-# solas-widget @ git+git://github.com/willeppy/solas-widget.git@master
 us
 iso3166
 pyemd>=0.5.1
-sklearn
