@@ -3,7 +3,8 @@
 Solas is a jupyter extension for visualization recommendation that uses your analysis history to provide better recommendations.
 
 ## Easy install
-```
+
+```bash
 pip install solas
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 jupyter labextension install solaswidget
