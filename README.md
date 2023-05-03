@@ -2,6 +2,17 @@
 
 Solas is a jupyter extension for visualization recommendation that uses your analysis history to provide better recommendations. You can write analysis code like you normally would in Pandas, Solas will visualize your data for you!
 
+Learn more about Solar in our [reserach paper](https://willepperson.com/papers/Solas_EuroVis22.pdf). If you use Solas in your research project, please cite the paper as:
+
+```bib
+@inproceedings{epperson2022leveraging,
+  title={Leveraging Analysis History for Improved In Situ Visualization Recommendation},
+  author={Epperson, Will and Jung-Lin Lee, Doris and Wang, Leijie and Agarwal, Kunal and Parameswaran, Aditya G and Moritz, Dominik and Perer, Adam},
+  booktitle={Computer Graphics Forum},
+  year={2022}
+}
+```
+
 ## Task-specific visualizations
 Solas tracks analysis commands issued through the Pandas API and automatically visualies the returned data. By tracking the history of analysis commands, Solas visualizes returned data in a sensible encoding.
 
