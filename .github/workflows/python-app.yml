@@ -45,14 +45,7 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
         pip install sqlalchemy
-
-        pip uninstall -y  solas-widget
-        pip install git+git://github.com/willeppy/solas-widget.git
-        # Temporary Fix (#372)
-        cd /opt/hostedtoolcache/Python/3.7.10/x64/lib/python3.7/site-packages/solaswidget/
-        mkdir labextension
-        cd labextension
-        wget https://raw.githubusercontent.com/willeppy/solas-widget/master/solaswidget/nbextension/package.json
+        pip install solas-widget
 
     - name: Upload data to Postgres
       run: |
