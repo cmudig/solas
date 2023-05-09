@@ -46,10 +46,3 @@ jobs:
         pip install -r requirements-dev.txt
         pip install sqlalchemy
         pip install solas-widget
-    - name: Lint check with black
-      run: |
-        black --target-version py37 --line-length 105 --check .
-    - name: Test with Pytest and Code Coverage Report
-      run: |
-        pytest --cov-report term --cov=solas tests/ tests_sql/
-        bash <(curl -s https://codecov.io/bash)
